@@ -1,12 +1,16 @@
-# Owlbear Rodeo Dice
+# Dicex
 
-Beautiful 3D dice extension for d20 based systems
+Beautiful 3D dice extension for d20 based systems, forked from [Owlbear Rodeo Dice](https://github.com/owlbear-rodeo/dice).
 
 ![Example](/docs/header.jpg)
 
 ## Installing
 
-The extension can be installed from the [store page](https://extensions.owlbear.rodeo/dice).
+Add the extension to Owlbear Rodeo using this manifest URL:
+
+```
+https://abottchen.github.io/dicex/manifest.json
+```
 
 ## How it Works
 
