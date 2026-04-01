@@ -148,8 +148,6 @@ function DicePickedControls() {
     resetDiceCounts();
     setBonus(0);
     setAdvantage(null);
-    setActivePresetName(null);
-    setActiveNotation(null);
   }
 
   const rollPressTime = useDiceControlsStore(

@@ -53,9 +53,14 @@ export function PresetSave() {
     setOpen(true);
   }
 
+  const setActivePresetName = useDiceControlsStore(
+    (state) => state.setActivePresetName
+  );
+
   async function handleSave() {
     if (!name.trim()) return;
     await savePreset(OBR.player.id, name.trim(), notation);
+    setActivePresetName(name.trim());
     setOpen(false);
   }
 

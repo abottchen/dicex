@@ -54,19 +54,25 @@ export function RollLogger() {
           })
         );
 
-        if (controlsState.diceBonus !== 0) {
+        const bonus = roll.bonus ?? 0;
+        if (bonus !== 0) {
           diceResults.push({
             type: "mod",
-            value: controlsState.diceBonus,
+            value: bonus,
           });
         }
 
-        const advantage =
-          controlsState.diceAdvantage === "ADVANTAGE"
-            ? ("adv" as const)
-            : controlsState.diceAdvantage === "DISADVANTAGE"
-            ? ("dis" as const)
-            : undefined;
+        const hasHighest = roll.dice.some(
+          (d) => "combination" in d && d.combination === "HIGHEST"
+        );
+        const hasLowest = roll.dice.some(
+          (d) => "combination" in d && d.combination === "LOWEST"
+        );
+        const advantage = hasHighest
+          ? ("adv" as const)
+          : hasLowest
+          ? ("dis" as const)
+          : undefined;
 
         const notation = controlsState.activeNotation || "unknown";
 

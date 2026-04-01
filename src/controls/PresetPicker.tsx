@@ -10,6 +10,7 @@ import TuneIcon from "@mui/icons-material/TuneRounded";
 import OBR from "@owlbear-rodeo/sdk";
 
 import { useDiceControlsStore } from "./store";
+import { useDiceRollStore } from "../dice/store";
 import { loadPresets, Preset } from "../plugin/presetStorage";
 import { parseNotation, isModifierComponent } from "../helpers/notationParser";
 import { PresetEditor } from "./PresetEditor";
@@ -24,6 +25,7 @@ export function PresetPicker() {
   const resetDiceCounts = useDiceControlsStore((s) => s.resetDiceCounts);
   const setActivePresetName = useDiceControlsStore((s) => s.setActivePresetName);
   const diceSet = useDiceControlsStore((s) => s.diceSet);
+  const clearRoll = useDiceRollStore((s) => s.clearRoll);
 
   async function refreshPresets() {
     const loaded = await loadPresets(OBR.player.id);
@@ -45,7 +47,8 @@ export function PresetPicker() {
     try {
       const components = parseNotation(preset.notation);
 
-      // Reset counts first
+      // Clear existing roll from tray and reset counts
+      clearRoll();
       resetDiceCounts();
       setDiceBonus(0);
       setActivePresetName(preset.name);
