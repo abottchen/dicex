@@ -4,14 +4,14 @@
   "manifest_version": 1,
   "author": "Adam Bottchen",
   "homepage_url": "https://abottchen.github.io/dicex/",
-  "icon": "/logo.png",
+  "icon": "/dicex/logo.png",
   "description": "Beautiful 3D dice extension for d20 based systems",
   "action": {
     "title": "Dicex",
-    "icon": "/icon.svg",
-    "popover": "/",
+    "icon": "/dicex/icon.svg",
+    "popover": "/dicex/",
     "height": 700,
     "width": 375
   },
-  "background_url": "/background.html"
+  "background_url": "/dicex/background.html"
 }
