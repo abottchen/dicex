@@ -68,24 +68,7 @@ export function RollLogger() {
             ? ("dis" as const)
             : undefined;
 
-        // Build notation from dice counts
-        const counts = controlsState.diceCounts;
-        const diceById = controlsState.diceById;
-        const notationParts: string[] = [];
-        for (const [id, count] of Object.entries(counts)) {
-          if (count > 0) {
-            const die = diceById[id];
-            if (die) {
-              notationParts.push(`${count}${die.type.toLowerCase()}`);
-            }
-          }
-        }
-        if (controlsState.diceBonus > 0) {
-          notationParts.push(`+${controlsState.diceBonus}`);
-        } else if (controlsState.diceBonus < 0) {
-          notationParts.push(`${controlsState.diceBonus}`);
-        }
-        const notation = notationParts.join("+") || "unknown";
+        const notation = controlsState.activeNotation || "unknown";
 
         const presetName = controlsState.activePresetName ?? undefined;
         const entry = buildRollEntry({

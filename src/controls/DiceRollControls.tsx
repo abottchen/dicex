@@ -19,6 +19,7 @@ import { RerollDiceIcon } from "../icons/RerollDiceIcon";
 import { GradientOverlay } from "./GradientOverlay";
 import { PluginGate } from "../plugin/PluginGate";
 import { PresetSave } from "./PresetSave";
+import { serializeNotation } from "../helpers/notationSerializer";
 import { useDiceRollStore } from "../dice/store";
 import { DiceResults } from "./DiceResults";
 import { getDiceToRoll, useDiceControlsStore } from "./store";
@@ -104,11 +105,27 @@ function DicePickedControls() {
   const setActivePresetName = useDiceControlsStore(
     (state) => state.setActivePresetName
   );
+  const setActiveNotation = useDiceControlsStore(
+    (state) => state.setActiveNotation
+  );
 
   const pushRecentRoll = useDiceHistoryStore((state) => state.pushRecentRoll);
 
   function handleRoll() {
     if (hasDice && rollPressTime) {
+      // Capture notation before reset clears the counts
+      const diceCountsByType: Record<string, number> = {};
+      for (const [id, count] of Object.entries(counts)) {
+        if (count > 0) {
+          const die = diceById[id];
+          if (die) {
+            const key = die.type.toLowerCase();
+            diceCountsByType[key] = (diceCountsByType[key] || 0) + count;
+          }
+        }
+      }
+      setActiveNotation(serializeNotation(diceCountsByType, bonus));
+
       const dice = getDiceToRoll(counts, advantage, diceById);
       const activeTimeSeconds = (performance.now() - rollPressTime) / 1000;
       const speedMultiplier = Math.max(1, Math.min(10, activeTimeSeconds * 2));
@@ -132,6 +149,7 @@ function DicePickedControls() {
     setBonus(0);
     setAdvantage(null);
     setActivePresetName(null);
+    setActiveNotation(null);
   }
 
   const rollPressTime = useDiceControlsStore(

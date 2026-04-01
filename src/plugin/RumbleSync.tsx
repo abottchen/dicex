@@ -70,6 +70,7 @@ export function RumbleSync() {
             : undefined;
 
         const presetName = controlsState.activePresetName ?? undefined;
+        const notation = controlsState.activeNotation ?? undefined;
         const hidden = roll.hidden ?? false;
         const playerObrId = OBR.player.id;
 
@@ -84,6 +85,7 @@ export function RumbleSync() {
             total,
             advantage,
             presetName,
+            notation,
           });
 
           const gmPlayer = players.find((p) => p.role === "GM");
