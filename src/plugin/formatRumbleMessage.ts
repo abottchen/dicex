@@ -90,16 +90,16 @@ export function formatRumbleMessage({
   // Build the inner expression
   let inner = groupSegments.join(", ");
 
-  // Append modifier inline after the last dice group's closing bracket
+  // Append advantage/disadvantage suffix
+  if (advantage) {
+    inner += ` ${advantage}`;
+  }
+
+  // Append modifier inline after advantage
   if (modifiers.length > 0) {
     const modTotal = modifiers.reduce((sum, m) => sum + m.value, 0);
     const sign = modTotal >= 0 ? "+" : "";
     inner += ` ${sign}${modTotal}`;
-  }
-
-  // Append advantage/disadvantage suffix
-  if (advantage) {
-    inner += ` ${advantage}`;
   }
 
   const rollVerb = presetName

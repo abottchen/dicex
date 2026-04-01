@@ -11,8 +11,7 @@ import { DiceHidden } from "./DiceHidden";
 import { DiceHistory } from "./DiceHistory";
 import { useDiceControlsStore } from "./store";
 
-import { FairnessTesterButton } from "../tests/FairnessTesterButton";
-import { PresetPicker } from "./PresetPicker";
+import { ToolsMenu } from "./ToolsMenu";
 
 import { PluginGate } from "../plugin/PluginGate";
 import { DiceRollSync } from "../plugin/DiceRollSync";
@@ -20,7 +19,6 @@ import { RumbleSync } from "../plugin/RumbleSync";
 import { RollLogger } from "../plugin/RollLogger";
 import { PartyTrays } from "../plugin/PartyTrays";
 import { ResizeObserver as PluginResizeObserver } from "../plugin/ResizeObserver";
-import { RollLogControls } from "./RollLogControls";
 
 function HiddenInitializer() {
   const initializeHidden = useDiceControlsStore((s) => s.initializeHidden);
@@ -48,17 +46,13 @@ export function Sidebar() {
         <DiceHidden />
         <DiceExtras />
         <DiceHistory />
-        <FairnessTesterButton />
-        <PluginGate>
-          <PresetPicker />
-        </PluginGate>
+        <ToolsMenu />
         <PluginGate>
           <HiddenInitializer />
           <Divider flexItem sx={{ mx: 1 }} />
           <DiceRollSync />
           <RumbleSync />
           <RollLogger />
-          <RollLogControls />
           <PartyTrays />
           <PluginResizeObserver />
         </PluginGate>

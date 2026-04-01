@@ -55,19 +55,27 @@ export function RumbleSync() {
           })
         );
 
-        if (controlsState.diceBonus !== 0) {
+        // Read bonus from the roll object (persists after handleReset clears controlsState)
+        const bonus = roll.bonus ?? 0;
+        if (bonus !== 0) {
           diceResults.push({
             type: "mod",
-            value: controlsState.diceBonus,
+            value: bonus,
           });
         }
 
-        const advantage =
-          controlsState.diceAdvantage === "ADVANTAGE"
-            ? ("adv" as const)
-            : controlsState.diceAdvantage === "DISADVANTAGE"
-            ? ("dis" as const)
-            : undefined;
+        // Detect advantage/disadvantage from roll structure
+        const hasHighest = roll.dice.some(
+          (d) => "combination" in d && d.combination === "HIGHEST"
+        );
+        const hasLowest = roll.dice.some(
+          (d) => "combination" in d && d.combination === "LOWEST"
+        );
+        const advantage = hasHighest
+          ? ("adv" as const)
+          : hasLowest
+          ? ("dis" as const)
+          : undefined;
 
         const presetName = controlsState.activePresetName ?? undefined;
         const notation = controlsState.activeNotation ?? undefined;
