@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from "vite";
 // @ts-ignore
 import { resolve } from "path";
@@ -18,5 +19,9 @@ export default defineConfig({
         background: resolve(__dirname, "background.html"),
       },
     },
+  },
+  test: {
+    environment: "node",
+    include: ["src/**/__tests__/**/*.test.ts"],
   },
 });
