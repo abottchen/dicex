@@ -100,7 +100,27 @@ describe("applyKeepDrop", () => {
   });
 });
 
+describe("applyKeepDrop (edge cases)", () => {
+  it("does not drop any dice when neither keep nor drop is specified", () => {
+    const dice: DieResult[] = [
+      { type: "d6", value: 3 },
+      { type: "d6", value: 5 },
+    ];
+    const result = applyKeepDrop(dice, {});
+    expect(result.every((d) => !d.dropped)).toBe(true);
+  });
+});
+
 describe("calculateTotal", () => {
+  it("returns 0 for an empty array", () => {
+    expect(calculateTotal([])).toBe(0);
+  });
+
+  it("returns the modifier value when only a modifier entry is present", () => {
+    const dice: (DieResult | ModifierResult)[] = [{ type: "mod", value: 7 }];
+    expect(calculateTotal(dice)).toBe(7);
+  });
+
   it("sums only non-dropped dice plus explosions plus modifiers", () => {
     const dice: (DieResult | ModifierResult)[] = [
       { type: "d6", value: 6, exploded: [3] },

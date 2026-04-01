@@ -37,4 +37,9 @@ describe("serializeNotation", () => {
       { modifier: 3 },
     ]);
   });
+
+  it("includes negative bonus as a literal string part", () => {
+    const result = serializeNotation({ d20: 1 }, -3);
+    expect(result).toBe("1d20+-3");
+  });
 });
