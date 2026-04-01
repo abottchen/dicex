@@ -16,6 +16,9 @@ export function DicePicker() {
   const setActivePresetName = useDiceControlsStore(
     (state) => state.setActivePresetName
   );
+  const setActiveNotationComponents = useDiceControlsStore(
+    (state) => state.setActiveNotationComponents
+  );
   const clearRoll = useDiceRollStore((state) => state.clearRoll);
   const roll = useDiceRollStore((state) => state.roll);
   function clearRollIfNeeded() {
@@ -49,6 +52,7 @@ export function DicePicker() {
               onClick={() => {
                 handleDiceCountIncrease(id);
                 setActivePresetName(null);
+                setActiveNotationComponents(null);
                 clearRollIfNeeded();
               }}
               sx={{ p: 0 }}

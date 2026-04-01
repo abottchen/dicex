@@ -5,6 +5,7 @@ import { Dice } from "../types/Dice";
 import { DiceSet } from "../types/DiceSet";
 import { Die } from "../types/Die";
 import { generateDiceId } from "../helpers/generateDiceId";
+import { NotationComponent } from "../helpers/notationParser";
 
 export type Advantage = "ADVANTAGE" | "DISADVANTAGE" | null;
 export type DiceCounts = Record<string, number>;
@@ -21,6 +22,7 @@ interface DiceControlsState {
   fairnessTesterOpen: boolean;
   activePresetName: string | null;
   activeNotation: string | null;
+  activeNotationComponents: NotationComponent[] | null;
   changeDiceSet: (diceSet: DiceSet) => void;
   resetDiceCounts: () => void;
   changeDieCount: (id: string, count: number) => void;
@@ -33,6 +35,7 @@ interface DiceControlsState {
   setDiceRollPressTime: (time: number | null) => void;
   setActivePresetName: (name: string | null) => void;
   setActiveNotation: (notation: string | null) => void;
+  setActiveNotationComponents: (components: NotationComponent[] | null) => void;
   toggleFairnessTester: () => void;
 }
 
@@ -53,6 +56,7 @@ export const useDiceControlsStore = create<DiceControlsState>()(
     fairnessTesterOpen: false,
     activePresetName: null,
     activeNotation: null,
+    activeNotationComponents: null,
     changeDiceSet(diceSet) {
       set((state) => {
         const counts: DiceCounts = {};
@@ -133,6 +137,11 @@ export const useDiceControlsStore = create<DiceControlsState>()(
     setActiveNotation(notation) {
       set((state) => {
         state.activeNotation = notation;
+      });
+    },
+    setActiveNotationComponents(components) {
+      set((state) => {
+        state.activeNotationComponents = components;
       });
     },
     toggleFairnessTester() {

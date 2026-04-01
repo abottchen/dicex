@@ -7,6 +7,7 @@ interface FormatRumbleMessageOptions {
   advantage?: "adv" | "dis";
   presetName?: string;
   notation?: string;
+  hidden?: boolean;
 }
 
 /** Returns true if any die in the array has exploded or dropped properties set */
@@ -20,27 +21,35 @@ function hasAdvancedDiceProps(dice: (DieResult | ModifierResult)[]): boolean {
 }
 
 /**
- * Expand a DieResult's values inline: the die's own value, then any explosion
- * chain values.
+ * Expand a DieResult into comma-separated bracket entries.
+ * - Exploded dice: 💥 prefix
+ * - Dropped dice: 🚫 prefix
+ * - Nat 20 on d20: ⭐ prefix
+ * - Nat 1 on d20: 💀 prefix
  */
 function expandDieValues(die: DieResult): string[] {
   const parts: string[] = [];
+  const isD20 = die.type === "d20";
+
   if (die.dropped) {
-    parts.push(`~~${die.value}~~`);
-  } else {
-    parts.push(String(die.value));
-  }
-  if (die.exploded) {
+    parts.push(`[🚫${die.value}]`);
+  } else if (die.exploded && die.exploded.length > 0) {
+    parts.push(`[💥${die.value}]`);
     for (const v of die.exploded) {
-      parts.push(String(v));
+      parts.push(`[${v}]`);
     }
+  } else if (isD20 && die.value === 20) {
+    parts.push(`[⭐20]`);
+  } else if (isD20 && die.value === 1) {
+    parts.push(`[💀1]`);
+  } else {
+    parts.push(`[${die.value}]`);
   }
   return parts;
 }
 
 /**
  * Format a group of consecutive same-type dice into a notation+values segment.
- * e.g. "2d6 → [3-3]"
  */
 function formatDiceGroup(
   type: string,
@@ -49,8 +58,8 @@ function formatDiceGroup(
 ): string {
   const count = dieFaces.length;
   const label = labelOverride ?? `${count}${type}`;
-  const values = dieFaces.flatMap(expandDieValues).join("-");
-  return `${label} \u2192 [${values}]`;
+  const values = dieFaces.flatMap(expandDieValues).join(", ");
+  return `${label} \u2192 ${values}`;
 }
 
 export function formatRumbleMessage({
@@ -60,6 +69,7 @@ export function formatRumbleMessage({
   advantage,
   presetName,
   notation,
+  hidden,
 }: FormatRumbleMessageOptions): string {
   // Separate modifiers from dice
   const modifiers = dice.filter((d): d is ModifierResult => d.type === "mod");
@@ -102,9 +112,10 @@ export function formatRumbleMessage({
     inner += ` ${sign}${modTotal}`;
   }
 
+  const hiddenPrefix = hidden ? "\uD83D\uDD12 " : "";
   const rollVerb = presetName
     ? `used [${presetName}] and rolled`
     : "rolled";
 
-  return `${playerName} ${rollVerb} (${inner}) for ${total}!`;
+  return `${hiddenPrefix}${playerName} ${rollVerb} (${inner}) for **${total}**!`;
 }
