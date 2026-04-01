@@ -18,15 +18,18 @@ export function DiceResults({
   rollValues,
   expanded,
   onExpand,
+  overrideTotal,
 }: {
   diceRoll: DiceRoll;
   rollValues: Record<string, number>;
   expanded: boolean;
   onExpand: (expand: boolean) => void;
+  overrideTotal?: number | null;
 }) {
   const finalValue = useMemo(() => {
+    if (overrideTotal != null) return overrideTotal;
     return getCombinedDiceValue(diceRoll, rollValues);
-  }, [diceRoll, rollValues]);
+  }, [diceRoll, rollValues, overrideTotal]);
 
   return (
     <Stack alignItems="center" maxHeight="calc(100vh - 100px)">

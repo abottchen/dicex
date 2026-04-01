@@ -3,10 +3,9 @@ import { useEffect, useRef } from "react";
 import { useDiceRollStore } from "../dice/store";
 import { useDiceControlsStore } from "../controls/store";
 import { getDieFromDice } from "../helpers/getDieFromDice";
-import { getCombinedDiceValue } from "../helpers/getCombinedDiceValue";
+import { buildDiceResults } from "../helpers/buildDiceResults";
 import { formatRumbleMessage } from "./formatRumbleMessage";
 import { getRumbleTargets } from "./getRumbleTargets";
-import { DieResult, ModifierResult } from "../types/RollResult";
 
 const RUMBLE_CHAT_KEY = "com.battle-system.friends/metadata_chatlog";
 
@@ -41,44 +40,18 @@ export function RumbleSync() {
         }
         prevFinished.current = true;
 
-        const values = state.rollValues as Record<string, number>;
         const roll = state.roll;
+        const values = state.rollValues as Record<string, number>;
         const controlsState = useDiceControlsStore.getState();
-        const total = getCombinedDiceValue(roll, values);
-        if (total === null) return;
 
-        const allDice = getDieFromDice(roll);
-        const diceResults: (DieResult | ModifierResult)[] = allDice.map(
-          (die) => ({
-            type: die.type.toLowerCase(),
-            value: values[die.id],
-          })
-        );
+        const result = buildDiceResults({
+          roll,
+          rollValues: values,
+          activeNotation: controlsState.activeNotation,
+          activePresetName: controlsState.activePresetName,
+          activeNotationComponents: controlsState.activeNotationComponents,
+        });
 
-        // Read bonus from the roll object (persists after handleReset clears controlsState)
-        const bonus = roll.bonus ?? 0;
-        if (bonus !== 0) {
-          diceResults.push({
-            type: "mod",
-            value: bonus,
-          });
-        }
-
-        // Detect advantage/disadvantage from roll structure
-        const hasHighest = roll.dice.some(
-          (d) => "combination" in d && d.combination === "HIGHEST"
-        );
-        const hasLowest = roll.dice.some(
-          (d) => "combination" in d && d.combination === "LOWEST"
-        );
-        const advantage = hasHighest
-          ? ("adv" as const)
-          : hasLowest
-          ? ("dis" as const)
-          : undefined;
-
-        const presetName = controlsState.activePresetName ?? undefined;
-        const notation = controlsState.activeNotation ?? undefined;
         const hidden = roll.hidden ?? false;
         const playerObrId = OBR.player.id;
 
@@ -89,11 +62,12 @@ export function RumbleSync() {
         ]).then(([playerName, role, players]) => {
           const message = formatRumbleMessage({
             playerName,
-            dice: diceResults,
-            total,
-            advantage,
-            presetName,
-            notation,
+            dice: result.dice,
+            total: result.total,
+            advantage: result.advantage,
+            presetName: result.presetName,
+            notation: result.notation,
+            hidden,
           });
 
           const gmPlayer = players.find((p) => p.role === "GM");

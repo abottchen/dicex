@@ -20,6 +20,8 @@ import { GradientOverlay } from "./GradientOverlay";
 import { PluginGate } from "../plugin/PluginGate";
 import { PresetSave } from "./PresetSave";
 import { serializeNotation } from "../helpers/notationSerializer";
+import { buildDiceResults } from "../helpers/buildDiceResults";
+import { isModifierComponent } from "../helpers/notationParser";
 import { useDiceRollStore } from "../dice/store";
 import { DiceResults } from "./DiceResults";
 import { getDiceToRoll, useDiceControlsStore } from "./store";
@@ -348,6 +350,26 @@ function FinishedRollControls() {
     return values;
   }, [rollValues]);
 
+  const activeNotationComponents = useDiceControlsStore(
+    (state) => state.activeNotationComponents
+  );
+  const hasAdvanced = useMemo(() => {
+    if (!activeNotationComponents) return false;
+    return activeNotationComponents.some(
+      (c) => !isModifierComponent(c) && (c.explode || c.keep !== undefined || c.drop !== undefined)
+    );
+  }, [activeNotationComponents]);
+
+  const advancedTotal = useMemo(() => {
+    if (!hasAdvanced || !roll) return null;
+    const result = buildDiceResults({
+      roll,
+      rollValues: finishedRollValues,
+      activeNotationComponents,
+    });
+    return result.total;
+  }, [hasAdvanced, roll, finishedRollValues, activeNotationComponents]);
+
   const [resultsExpanded, setResultsExpanded] = useState(false);
 
   return (
@@ -406,6 +428,7 @@ function FinishedRollControls() {
             rollValues={finishedRollValues}
             expanded={resultsExpanded}
             onExpand={setResultsExpanded}
+            overrideTotal={advancedTotal}
           />
         )}
         {roll?.hidden && (

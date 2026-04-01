@@ -3,9 +3,9 @@ import { useEffect, useRef } from "react";
 import { useDiceRollStore } from "../dice/store";
 import { useDiceControlsStore } from "../controls/store";
 import { getDieFromDice } from "../helpers/getDieFromDice";
-import { getCombinedDiceValue } from "../helpers/getCombinedDiceValue";
+import { buildDiceResults } from "../helpers/buildDiceResults";
 import { buildRollEntry } from "./buildRollEntry";
-import { DieResult, ModifierResult, RollEntry } from "../types/RollResult";
+import { RollEntry } from "../types/RollResult";
 
 const LOG_KEY_PREFIX = "com.dicex/roll-log/";
 
@@ -40,49 +40,24 @@ export function RollLogger() {
         }
         prevFinished.current = true;
 
-        const values = state.rollValues as Record<string, number>;
         const roll = state.roll;
+        const values = state.rollValues as Record<string, number>;
         const controlsState = useDiceControlsStore.getState();
-        const total = getCombinedDiceValue(roll, values);
-        if (total === null) return;
 
-        const allDice = getDieFromDice(roll);
-        const diceResults: (DieResult | ModifierResult)[] = allDice.map(
-          (die) => ({
-            type: die.type.toLowerCase(),
-            value: values[die.id],
-          })
-        );
+        const result = buildDiceResults({
+          roll,
+          rollValues: values,
+          activeNotation: controlsState.activeNotation,
+          activePresetName: controlsState.activePresetName,
+          activeNotationComponents: controlsState.activeNotationComponents,
+        });
 
-        const bonus = roll.bonus ?? 0;
-        if (bonus !== 0) {
-          diceResults.push({
-            type: "mod",
-            value: bonus,
-          });
-        }
-
-        const hasHighest = roll.dice.some(
-          (d) => "combination" in d && d.combination === "HIGHEST"
-        );
-        const hasLowest = roll.dice.some(
-          (d) => "combination" in d && d.combination === "LOWEST"
-        );
-        const advantage = hasHighest
-          ? ("adv" as const)
-          : hasLowest
-          ? ("dis" as const)
-          : undefined;
-
-        const notation = controlsState.activeNotation || "unknown";
-
-        const presetName = controlsState.activePresetName ?? undefined;
         const entry = buildRollEntry({
-          diceResults,
-          total,
-          notation,
-          advantage,
-          preset: presetName,
+          diceResults: result.dice,
+          total: result.total,
+          notation: result.notation || "unknown",
+          advantage: result.advantage,
+          preset: result.presetName,
         });
 
         const playerId = OBR.player.id;

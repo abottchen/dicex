@@ -37,6 +37,7 @@ export function ToolsMenu() {
   const setDiceBonus = useDiceControlsStore((s) => s.setDiceBonus);
   const resetDiceCounts = useDiceControlsStore((s) => s.resetDiceCounts);
   const setActivePresetName = useDiceControlsStore((s) => s.setActivePresetName);
+  const setActiveNotationComponents = useDiceControlsStore((s) => s.setActiveNotationComponents);
   const diceSet = useDiceControlsStore((s) => s.diceSet);
   const clearRoll = useDiceRollStore((s) => s.clearRoll);
 
@@ -78,6 +79,7 @@ export function ToolsMenu() {
       resetDiceCounts();
       setDiceBonus(0);
       setActivePresetName(preset.name);
+      setActiveNotationComponents(components);
       for (const component of components) {
         if (isModifierComponent(component)) {
           setDiceBonus(component.modifier);
