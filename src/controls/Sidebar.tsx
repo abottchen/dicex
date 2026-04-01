@@ -12,6 +12,7 @@ import { FairnessTesterButton } from "../tests/FairnessTesterButton";
 
 import { PluginGate } from "../plugin/PluginGate";
 import { DiceRollSync } from "../plugin/DiceRollSync";
+import { RumbleSync } from "../plugin/RumbleSync";
 import { PartyTrays } from "../plugin/PartyTrays";
 import { ResizeObserver as PluginResizeObserver } from "../plugin/ResizeObserver";
 
@@ -37,6 +38,7 @@ export function Sidebar() {
         <PluginGate>
           <Divider flexItem sx={{ mx: 1 }} />
           <DiceRollSync />
+          <RumbleSync />
           <PartyTrays />
           <PluginResizeObserver />
         </PluginGate>
