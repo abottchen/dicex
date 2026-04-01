@@ -27,6 +27,7 @@ interface DiceControlsState {
   setDiceAdvantage: (advantage: Advantage) => void;
   setDiceBonus: (bonus: number) => void;
   toggleDiceHidden: () => void;
+  initializeHidden: (role: string) => void;
   setDiceRollPressTime: (time: number | null) => void;
   toggleFairnessTester: () => void;
 }
@@ -106,6 +107,11 @@ export const useDiceControlsStore = create<DiceControlsState>()(
     toggleDiceHidden() {
       set((state) => {
         state.diceHidden = !state.diceHidden;
+      });
+    },
+    initializeHidden(role) {
+      set((state) => {
+        state.diceHidden = role === "GM";
       });
     },
     setDiceRollPressTime(time) {
