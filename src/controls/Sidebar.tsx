@@ -9,6 +9,7 @@ import { DiceHidden } from "./DiceHidden";
 import { DiceHistory } from "./DiceHistory";
 
 import { FairnessTesterButton } from "../tests/FairnessTesterButton";
+import { PresetPicker } from "./PresetPicker";
 
 import { PluginGate } from "../plugin/PluginGate";
 import { DiceRollSync } from "../plugin/DiceRollSync";
@@ -37,6 +38,9 @@ export function Sidebar() {
         <DiceExtras />
         <DiceHistory />
         <FairnessTesterButton />
+        <PluginGate>
+          <PresetPicker />
+        </PluginGate>
         <PluginGate>
           <Divider flexItem sx={{ mx: 1 }} />
           <DiceRollSync />

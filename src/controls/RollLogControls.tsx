@@ -19,11 +19,11 @@ export function RollLogControls() {
 
   async function getPlayerLogs() {
     const metadata = await OBR.room.getMetadata();
-    const logs: Record<string, { name: string; rolls: unknown[] }> = {};
+    const logs: Record<string, any> = {};
     for (const [key, value] of Object.entries(metadata)) {
       if (key.startsWith(LOG_KEY_PREFIX)) {
         const playerId = key.slice(LOG_KEY_PREFIX.length);
-        logs[playerId] = value as { name: string; rolls: unknown[] };
+        logs[playerId] = value;
       }
     }
     return logs;

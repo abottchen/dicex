@@ -17,6 +17,8 @@ import RollIcon from "@mui/icons-material/ArrowForwardRounded";
 import { RerollDiceIcon } from "../icons/RerollDiceIcon";
 
 import { GradientOverlay } from "./GradientOverlay";
+import { PluginGate } from "../plugin/PluginGate";
+import { PresetSave } from "./PresetSave";
 import { useDiceRollStore } from "../dice/store";
 import { DiceResults } from "./DiceResults";
 import { getDiceToRoll, useDiceControlsStore } from "./store";
@@ -253,16 +255,21 @@ function DicePickedControls() {
           transform: "translateX(-50%)",
         }}
       >
-        <Tooltip title="Clear" disableInteractive>
-          <IconButton
-            onClick={(e) => {
-              e.stopPropagation();
-              handleReset();
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </Tooltip>
+        <Stack direction="row" gap={0.5} alignItems="center">
+          <PluginGate>
+            <PresetSave />
+          </PluginGate>
+          <Tooltip title="Clear" disableInteractive>
+            <IconButton
+              onClick={(e) => {
+                e.stopPropagation();
+                handleReset();
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Tooltip>
+        </Stack>
       </Stack>
       <Stack
         sx={{

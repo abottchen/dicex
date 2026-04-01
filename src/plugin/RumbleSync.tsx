@@ -57,40 +57,42 @@ export function RumbleSync() {
             ? ("dis" as const)
             : undefined;
 
-        const message = formatRumbleMessage({
-          playerName: OBR.player.name,
-          dice: diceResults,
-          total,
-          advantage,
-        });
-
         const hidden = roll.hidden ?? false;
         const playerObrId = OBR.player.id;
 
-        OBR.party.getPlayers().then((players) => {
-          OBR.player.getRole().then((role) => {
-            const gmPlayer = players.find((p) => p.role === "GM");
-            const gmObrId =
-              role === "GM" ? playerObrId : gmPlayer?.id ?? playerObrId;
-
-            const targets = getRumbleTargets({
-              hidden,
-              playerObrId,
-              gmObrId,
-              playerRole: role,
-            });
-
-            for (const targetId of targets) {
-              OBR.player.setMetadata({
-                [RUMBLE_CHAT_KEY]: {
-                  chatlog: message,
-                  created: new Date().toISOString(),
-                  sender: "Dicex",
-                  targetId,
-                },
-              });
-            }
+        Promise.all([
+          OBR.player.getName(),
+          OBR.player.getRole(),
+          OBR.party.getPlayers(),
+        ]).then(([playerName, role, players]) => {
+          const message = formatRumbleMessage({
+            playerName,
+            dice: diceResults,
+            total,
+            advantage,
           });
+
+          const gmPlayer = players.find((p) => p.role === "GM");
+          const gmObrId =
+            role === "GM" ? playerObrId : gmPlayer?.id ?? playerObrId;
+
+          const targets = getRumbleTargets({
+            hidden,
+            playerObrId,
+            gmObrId,
+            playerRole: role,
+          });
+
+          for (const targetId of targets) {
+            OBR.player.setMetadata({
+              [RUMBLE_CHAT_KEY]: {
+                chatlog: message,
+                created: new Date().toISOString(),
+                sender: "Dicex",
+                targetId,
+              },
+            });
+          }
         });
       }),
     []

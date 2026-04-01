@@ -5,7 +5,7 @@ import { useDiceControlsStore } from "../controls/store";
 import { getDieFromDice } from "../helpers/getDieFromDice";
 import { getCombinedDiceValue } from "../helpers/getCombinedDiceValue";
 import { buildRollEntry } from "./buildRollEntry";
-import { DieResult, ModifierResult } from "../types/RollResult";
+import { DieResult, ModifierResult, RollEntry } from "../types/RollResult";
 
 const LOG_KEY_PREFIX = "com.dicex/roll-log/";
 
@@ -84,13 +84,16 @@ export function RollLogger() {
 
         const playerId = OBR.player.id;
         const logKey = `${LOG_KEY_PREFIX}${playerId}`;
-        OBR.room.getMetadata().then((metadata) => {
-          const existing = (metadata[logKey] as { name: string; rolls: unknown[] } | undefined) || {
-            name: OBR.player.name,
+        Promise.all([
+          OBR.player.getName(),
+          OBR.room.getMetadata(),
+        ]).then(([playerName, metadata]) => {
+          const existing = (metadata[logKey] as { name: string; rolls: RollEntry[] } | undefined) || {
+            name: playerName,
             rolls: [],
           };
           existing.rolls.push(entry);
-          existing.name = OBR.player.name;
+          existing.name = playerName;
           OBR.room.setMetadata({ [logKey]: existing });
         });
       }),
