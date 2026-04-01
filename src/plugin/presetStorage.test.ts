@@ -5,7 +5,7 @@ import {
   deletePreset,
   updatePreset,
   Preset,
-} from "../presetStorage";
+} from "./presetStorage";
 
 // Mock OBR SDK
 const mockMetadata: Record<string, unknown> = {};

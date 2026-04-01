@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseNotation, NotationError } from "../notationParser";
+import { parseNotation, NotationError } from "./notationParser";
 
 describe("parseNotation", () => {
   it("parses basic dice: 2d6", () => {

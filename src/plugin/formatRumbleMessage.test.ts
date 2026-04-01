@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { formatRumbleMessage } from "../formatRumbleMessage";
-import { DieResult, ModifierResult } from "../../types/RollResult";
+import { formatRumbleMessage } from "./formatRumbleMessage";
+import { DieResult, ModifierResult } from "../types/RollResult";
 
 describe("formatRumbleMessage", () => {
   it("formats a basic roll", () => {

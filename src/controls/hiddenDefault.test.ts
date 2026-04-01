@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { useDiceControlsStore } from "../store";
+import { useDiceControlsStore } from "./store";
 
 describe("hiddenDefault", () => {
   beforeEach(() => {

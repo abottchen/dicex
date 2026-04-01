@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { applyExplodingDice, applyKeepDrop, calculateTotal } from "../advancedRolls";
-import { DieResult, ModifierResult } from "../../types/RollResult";
+import { applyExplodingDice, applyKeepDrop, calculateTotal } from "./advancedRolls";
+import { DieResult, ModifierResult } from "../types/RollResult";
 
 describe("applyExplodingDice", () => {
   it("explodes on max value for d6", () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getRumbleTargets } from "../getRumbleTargets";
+import { getRumbleTargets } from "./getRumbleTargets";
 
 describe("getRumbleTargets", () => {
   it("returns party target for normal roll", () => {

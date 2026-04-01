@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { combinePlayerLogs, triggerJsonDownload } from "../rollLogExport";
+import { combinePlayerLogs, triggerJsonDownload } from "./rollLogExport";
 
 describe("combinePlayerLogs", () => {
   it("combines multiple players logs into single object", () => {

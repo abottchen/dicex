@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildRollEntry } from "../buildRollEntry";
+import { buildRollEntry } from "./buildRollEntry";
 
 describe("buildRollEntry", () => {
   it("builds a basic roll entry", () => {

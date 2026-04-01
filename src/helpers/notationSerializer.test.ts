@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { serializeNotation } from "../notationSerializer";
-import { parseNotation } from "../notationParser";
+import { serializeNotation } from "./notationSerializer";
+import { parseNotation } from "./notationParser";
 
 describe("serializeNotation", () => {
   it("serializes simple dice: 2d6", () => {
