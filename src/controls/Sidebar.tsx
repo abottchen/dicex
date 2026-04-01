@@ -1,12 +1,15 @@
+import { useEffect } from "react";
 import SimpleBar from "simplebar-react";
 import Stack from "@mui/material/Stack";
 import Divider from "@mui/material/Divider";
+import OBR from "@owlbear-rodeo/sdk";
 
 import { DiceSetPicker } from "./DiceSetPicker";
 import { DicePicker } from "./DicePicker";
 import { DiceExtras } from "./DiceExtras";
 import { DiceHidden } from "./DiceHidden";
 import { DiceHistory } from "./DiceHistory";
+import { useDiceControlsStore } from "./store";
 
 import { FairnessTesterButton } from "../tests/FairnessTesterButton";
 import { PresetPicker } from "./PresetPicker";
@@ -18,6 +21,14 @@ import { RollLogger } from "../plugin/RollLogger";
 import { PartyTrays } from "../plugin/PartyTrays";
 import { ResizeObserver as PluginResizeObserver } from "../plugin/ResizeObserver";
 import { RollLogControls } from "./RollLogControls";
+
+function HiddenInitializer() {
+  const initializeHidden = useDiceControlsStore((s) => s.initializeHidden);
+  useEffect(() => {
+    OBR.player.getRole().then((role) => initializeHidden(role));
+  }, [initializeHidden]);
+  return null;
+}
 
 export function Sidebar() {
   return (
@@ -42,6 +53,7 @@ export function Sidebar() {
           <PresetPicker />
         </PluginGate>
         <PluginGate>
+          <HiddenInitializer />
           <Divider flexItem sx={{ mx: 1 }} />
           <DiceRollSync />
           <RumbleSync />
