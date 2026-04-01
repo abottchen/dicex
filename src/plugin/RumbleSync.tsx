@@ -12,14 +12,26 @@ const RUMBLE_CHAT_KEY = "com.battle-system.friends/metadata_chatlog";
 
 export function RumbleSync() {
   const prevFinished = useRef(false);
+  const prevIds = useRef<string[]>([]);
 
   useEffect(
     () =>
       useDiceRollStore.subscribe((state) => {
         if (!state.roll) {
           prevFinished.current = false;
+          prevIds.current = [];
           return;
         }
+
+        // Reset prevFinished when die IDs change (reroll / manual throw)
+        const ids = getDieFromDice(state.roll).map((die) => die.id);
+        if (
+          ids.length !== prevIds.current.length ||
+          !ids.every((id, i) => id === prevIds.current[i])
+        ) {
+          prevFinished.current = false;
+        }
+        prevIds.current = ids;
 
         const allFinished = Object.values(state.rollValues).every(
           (v) => v !== null
@@ -57,6 +69,8 @@ export function RumbleSync() {
             ? ("dis" as const)
             : undefined;
 
+        const presetName = controlsState.activePresetName ?? undefined;
+        const notation = controlsState.activeNotation ?? undefined;
         const hidden = roll.hidden ?? false;
         const playerObrId = OBR.player.id;
 
@@ -70,6 +84,8 @@ export function RumbleSync() {
             dice: diceResults,
             total,
             advantage,
+            presetName,
+            notation,
           });
 
           const gmPlayer = players.find((p) => p.role === "GM");

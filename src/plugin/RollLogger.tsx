@@ -11,14 +11,26 @@ const LOG_KEY_PREFIX = "com.dicex/roll-log/";
 
 export function RollLogger() {
   const prevFinished = useRef(false);
+  const prevIds = useRef<string[]>([]);
 
   useEffect(
     () =>
       useDiceRollStore.subscribe((state) => {
         if (!state.roll) {
           prevFinished.current = false;
+          prevIds.current = [];
           return;
         }
+
+        // Reset prevFinished when die IDs change (reroll / manual throw)
+        const ids = getDieFromDice(state.roll).map((die) => die.id);
+        if (
+          ids.length !== prevIds.current.length ||
+          !ids.every((id, i) => id === prevIds.current[i])
+        ) {
+          prevFinished.current = false;
+        }
+        prevIds.current = ids;
 
         const allFinished = Object.values(state.rollValues).every(
           (v) => v !== null
@@ -56,30 +68,15 @@ export function RollLogger() {
             ? ("dis" as const)
             : undefined;
 
-        // Build notation from dice counts
-        const counts = controlsState.diceCounts;
-        const diceById = controlsState.diceById;
-        const notationParts: string[] = [];
-        for (const [id, count] of Object.entries(counts)) {
-          if (count > 0) {
-            const die = diceById[id];
-            if (die) {
-              notationParts.push(`${count}${die.type.toLowerCase()}`);
-            }
-          }
-        }
-        if (controlsState.diceBonus > 0) {
-          notationParts.push(`+${controlsState.diceBonus}`);
-        } else if (controlsState.diceBonus < 0) {
-          notationParts.push(`${controlsState.diceBonus}`);
-        }
-        const notation = notationParts.join("+") || "unknown";
+        const notation = controlsState.activeNotation || "unknown";
 
+        const presetName = controlsState.activePresetName ?? undefined;
         const entry = buildRollEntry({
           diceResults,
           total,
           notation,
           advantage,
+          preset: presetName,
         });
 
         const playerId = OBR.player.id;
