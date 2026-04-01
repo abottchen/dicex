@@ -29,6 +29,7 @@
     "react-dom": "^18.2.0",
     "simplebar-react": "^3.2.1",
     "three": "^0.153.0",
+    "uuid": "^13.0.0",
     "zustand": "^4.1.2"
   },
   "devDependencies": {
