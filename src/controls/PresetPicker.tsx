@@ -22,6 +22,7 @@ export function PresetPicker() {
   const changeDieCount = useDiceControlsStore((s) => s.changeDieCount);
   const setDiceBonus = useDiceControlsStore((s) => s.setDiceBonus);
   const resetDiceCounts = useDiceControlsStore((s) => s.resetDiceCounts);
+  const setActivePresetName = useDiceControlsStore((s) => s.setActivePresetName);
   const diceSet = useDiceControlsStore((s) => s.diceSet);
 
   async function refreshPresets() {
@@ -47,6 +48,7 @@ export function PresetPicker() {
       // Reset counts first
       resetDiceCounts();
       setDiceBonus(0);
+      setActivePresetName(preset.name);
 
       for (const component of components) {
         if (isModifierComponent(component)) {

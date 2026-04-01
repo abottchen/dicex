@@ -19,6 +19,7 @@ interface DiceControlsState {
   diceHidden: boolean;
   diceRollPressTime: number | null;
   fairnessTesterOpen: boolean;
+  activePresetName: string | null;
   changeDiceSet: (diceSet: DiceSet) => void;
   resetDiceCounts: () => void;
   changeDieCount: (id: string, count: number) => void;
@@ -29,6 +30,7 @@ interface DiceControlsState {
   toggleDiceHidden: () => void;
   initializeHidden: (role: string) => void;
   setDiceRollPressTime: (time: number | null) => void;
+  setActivePresetName: (name: string | null) => void;
   toggleFairnessTester: () => void;
 }
 
@@ -47,6 +49,7 @@ export const useDiceControlsStore = create<DiceControlsState>()(
     diceHidden: false,
     diceRollPressTime: null,
     fairnessTesterOpen: false,
+    activePresetName: null,
     changeDiceSet(diceSet) {
       set((state) => {
         const counts: DiceCounts = {};
@@ -117,6 +120,11 @@ export const useDiceControlsStore = create<DiceControlsState>()(
     setDiceRollPressTime(time) {
       set((state) => {
         state.diceRollPressTime = time;
+      });
+    },
+    setActivePresetName(name) {
+      set((state) => {
+        state.activePresetName = name;
       });
     },
     toggleFairnessTester() {

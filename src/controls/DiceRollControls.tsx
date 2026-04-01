@@ -101,6 +101,9 @@ function DicePickedControls() {
   const resetDiceCounts = useDiceControlsStore(
     (state) => state.resetDiceCounts
   );
+  const setActivePresetName = useDiceControlsStore(
+    (state) => state.setActivePresetName
+  );
 
   const pushRecentRoll = useDiceHistoryStore((state) => state.pushRecentRoll);
 
@@ -128,6 +131,7 @@ function DicePickedControls() {
     resetDiceCounts();
     setBonus(0);
     setAdvantage(null);
+    setActivePresetName(null);
   }
 
   const rollPressTime = useDiceControlsStore(

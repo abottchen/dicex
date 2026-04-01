@@ -87,11 +87,13 @@ export function RollLogger() {
         }
         const notation = notationParts.join("+") || "unknown";
 
+        const presetName = controlsState.activePresetName ?? undefined;
         const entry = buildRollEntry({
           diceResults,
           total,
           notation,
           advantage,
+          preset: presetName,
         });
 
         const playerId = OBR.player.id;

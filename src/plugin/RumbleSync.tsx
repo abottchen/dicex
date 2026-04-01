@@ -69,6 +69,7 @@ export function RumbleSync() {
             ? ("dis" as const)
             : undefined;
 
+        const presetName = controlsState.activePresetName ?? undefined;
         const hidden = roll.hidden ?? false;
         const playerObrId = OBR.player.id;
 
@@ -82,6 +83,7 @@ export function RumbleSync() {
             dice: diceResults,
             total,
             advantage,
+            presetName,
           });
 
           const gmPlayer = players.find((p) => p.role === "GM");
