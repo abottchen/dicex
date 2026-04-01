@@ -1,13 +1,13 @@
 {
-  "name": "Dice",
+  "name": "Dicex",
   "version": "2.0.0",
   "manifest_version": 1,
-  "author": "Owlbear Rodeo",
-  "homepage_url": "https://extensions.owlbear.rodeo/dice",
+  "author": "Adam Bottchen",
+  "homepage_url": "https://abottchen.github.io/dicex/",
   "icon": "/logo.png",
   "description": "Beautiful 3D dice extension for d20 based systems",
   "action": {
-    "title": "Dice",
+    "title": "Dicex",
     "icon": "/icon.svg",
     "popover": "/",
     "height": 700,
