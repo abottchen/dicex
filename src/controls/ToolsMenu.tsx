@@ -17,7 +17,7 @@ import { useDiceControlsStore } from "./store";
 import { useDiceRollStore } from "../dice/store";
 import { PresetEditor } from "./PresetEditor";
 import { loadPresets, Preset } from "../plugin/presetStorage";
-import { parseNotation, isModifierComponent } from "../helpers/notationParser";
+import { loadPresetIntoControls } from "../helpers/loadPresetIntoControls";
 import { combinePlayerLogs, triggerJsonDownload } from "../plugin/rollLogExport";
 
 const LOG_KEY_PREFIX = "com.dicex/roll-log/";
@@ -33,12 +33,6 @@ export function ToolsMenu() {
   const toggleFairnessTester = useDiceControlsStore(
     (state) => state.toggleFairnessTester
   );
-  const changeDieCount = useDiceControlsStore((s) => s.changeDieCount);
-  const setDiceBonus = useDiceControlsStore((s) => s.setDiceBonus);
-  const resetDiceCounts = useDiceControlsStore((s) => s.resetDiceCounts);
-  const setActivePresetName = useDiceControlsStore((s) => s.setActivePresetName);
-  const setActiveNotationComponents = useDiceControlsStore((s) => s.setActiveNotationComponents);
-  const diceSet = useDiceControlsStore((s) => s.diceSet);
   const clearRoll = useDiceRollStore((s) => s.clearRoll);
 
   useEffect(() => {
@@ -74,23 +68,8 @@ export function ToolsMenu() {
     handlePresetsClose();
     handleClose();
     try {
-      const components = parseNotation(preset.notation);
       clearRoll();
-      resetDiceCounts();
-      setDiceBonus(0);
-      setActivePresetName(preset.name);
-      setActiveNotationComponents(components);
-      for (const component of components) {
-        if (isModifierComponent(component)) {
-          setDiceBonus(component.modifier);
-        } else {
-          const typeStr = `D${component.sides}`;
-          const die = diceSet.dice.find((d) => d.type === typeStr);
-          if (die) {
-            changeDieCount(die.id, component.count);
-          }
-        }
-      }
+      loadPresetIntoControls(preset.notation, preset.name);
     } catch {
       // Invalid notation
     }
