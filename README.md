@@ -4,6 +4,36 @@ Beautiful 3D dice extension for d20 based systems, forked from [Owlbear Rodeo Di
 
 ![Example](/docs/header.jpg)
 
+## Fork Features
+
+Dicex extends the upstream Owlbear Rodeo dice roller with the following:
+
+### Advanced Roll Mechanics
+
+- **Exploding dice** — Dice that hit their max (or a specified threshold) automatically reroll and add to the total. Supports `!`, `!>N`, and exact-value explosions.
+- **Keep/drop** — Roll extra dice and keep the highest or drop the lowest (e.g. `4d6k3` for classic stat rolling).
+- **Advantage/disadvantage** — Toggle to automatically double your dice pool and take the highest or lowest result. Handles paired d100+d10 correctly.
+
+### Dice Notation
+
+A full notation parser and serializer supporting expressions like `4d6!k3+2`. Used throughout presets, chat messages, and the audit log.
+
+### Presets
+
+Save, load, and edit named roll configurations. Presets persist per-player in OBR room metadata and can be quickly loaded from a picker menu. The active preset name is shown in chat messages.
+
+### Rumble Chat Integration
+
+Roll results are automatically posted to Owlbear Rodeo's Rumble chat with smart formatting — individual die values grouped by type, emoji markers for crits (⭐), fumbles (💀), explosions (💥), and dropped dice (🚫). Hidden rolls are only visible to the rolling player and the GM.
+
+### Roll Audit Log
+
+Every roll is recorded with timestamp, notation, individual die results, total, and advantage mode. The GM can export the full table's roll history as JSON or clear the log.
+
+### Hidden Rolls
+
+A visibility toggle that defaults to hidden for GMs and visible for players. Hidden rolls are excluded from the public Rumble chat feed and only sent to the roller and GM.
+
 ## Installing
 
 Add the extension to Owlbear Rodeo using this manifest URL:

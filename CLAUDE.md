@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Shell tools
+
+- **Never use Python for JSON parsing** — use `jq` instead. `jq` is available on PATH.
+- Prefer dedicated tools (Read, Grep, Glob) over shell commands when possible.
+
 ## Commands
 
 ```bash
@@ -9,9 +14,11 @@ yarn          # Install dependencies
 yarn dev      # Start development server (Vite)
 yarn build    # TypeScript check + production build
 yarn preview  # Preview production build locally
+yarn test     # Run all vitest tests once
+yarn test:watch  # Run vitest in watch mode
 ```
 
-There are no test commands. The `src/tests/` folder contains a fairness tester UI tool, not an automated test suite.
+Note: The `src/tests/` folder contains a fairness tester UI tool, not part of the automated test suite. Actual tests are colocated with source files (`*.test.ts`) and in `src/integration/`.
 
 ## Architecture
 
@@ -34,6 +41,12 @@ This is a 3D dice roller [Owlbear Rodeo VTT extension](https://extensions.owlbea
 
 Four folders must be updated together: `src/materials/` (PBR textures), `src/meshes/` (3D geometry), `src/colliders/` (simplified physics geometry), `src/previews/` (2D UI preview images). Then register the set in `src/sets/diceSets.ts`.
 
+### Test structure
+
+- **Unit tests** — colocated next to source files (e.g. `src/helpers/advancedRolls.test.ts`)
+- **Integration tests** — in `src/integration/`, test full roll workflows using a shared setup (`src/integration/setup.ts`) that creates real Zustand stores
+- Vitest config is in `vite.config.ts` under `test:`; environment is `node` (no DOM)
+
 ### Key files
 
 | File | Purpose |
@@ -43,5 +56,10 @@ Four folders must be updated together: `src/materials/` (PBR textures), `src/mes
 | `src/dice/InteractiveDiceRoll.tsx` | Orchestrates multiple dice rolling simultaneously |
 | `src/helpers/DiceThrower.ts` | Generates random initial positions/velocities for fair rolls |
 | `src/helpers/getCombinedDiceValue.ts` | Aggregates results (sum, highest/lowest for advantage) |
+| `src/helpers/advancedRolls.ts` | Advanced roll mechanics (reroll, keep highest/lowest, exploding dice) |
+| `src/helpers/notationParser.ts` | Parses dice notation strings (e.g. `2d6+3`) into structured data |
+| `src/helpers/buildDiceResults.ts` | Builds final dice result objects from raw roll data |
 | `src/plugin/` | All Owlbear SDK integration code |
+| `src/plugin/rollLoggerSubscription.ts` | Subscribes to roll events and logs them |
+| `src/plugin/rumbleSyncSubscription.ts` | Subscribes to rumble (screen shake) sync events |
 | `src/audio/` | Procedural Web Audio API dice impact sounds |
