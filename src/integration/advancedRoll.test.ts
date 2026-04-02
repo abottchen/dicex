@@ -143,4 +143,67 @@ describe("advanced roll integration", () => {
 
     randomSpy.mockRestore();
   });
+
+  it("physical explosion dice are added to the roll and included in totals", async () => {
+    const components = parseNotation("2d6!");
+    useDiceControlsStore.setState({
+      activeNotation: "2d6!",
+      activeNotationComponents: components,
+    });
+
+    const dice: Die[] = [
+      createTestDie("D6", "p1"),
+      createTestDie("D6", "p2"),
+    ];
+    const roll: DiceRoll = { dice };
+    useDiceRollStore.getState().startRoll(roll);
+
+    // Finish initial dice: first die rolls 6 (should explode), second rolls 3
+    const ids = Object.keys(useDiceRollStore.getState().rollValues);
+    const dummyTransform = { position: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0, w: 1 } };
+    useDiceRollStore.getState().finishDieRoll(ids[0], 6, dummyTransform);
+    useDiceRollStore.getState().finishDieRoll(ids[1], 3, dummyTransform);
+
+    // Simulate what useExplosionWaves would do:
+    // Add an explosion die for the die that rolled 6
+    const explosionDie: Die = {
+      id: "exp-1",
+      style: "IRON" as DiceStyle,
+      type: "D6" as any,
+      isExplosion: true,
+    };
+    const explosionThrow = {
+      position: { x: 0, y: 1, z: 0 },
+      rotation: { x: 0, y: 0, z: 0, w: 1 },
+      linearVelocity: { x: 0.1, y: 0, z: -0.1 },
+      angularVelocity: { x: 1, y: 1, z: 1 },
+    };
+    useDiceRollStore.getState().addExplosionDice([explosionDie], { "exp-1": explosionThrow });
+
+    // Verify the explosion die is in rollValues as null (unfinished)
+    expect(useDiceRollStore.getState().rollValues["exp-1"]).toBeNull();
+
+    // Finish the explosion die with value 4
+    useDiceRollStore.getState().finishDieRoll("exp-1", 4, dummyTransform);
+
+    // All dice should now be settled
+    const finalValues = useDiceRollStore.getState().rollValues;
+    expect(Object.values(finalValues).every((v) => v !== null)).toBe(true);
+
+    // Verify the roll structure includes the explosion die
+    const finalRoll = useDiceRollStore.getState().roll!;
+    expect(finalRoll.dice).toHaveLength(3);
+
+    // Build results with physicalExplosions flag
+    const { buildDiceResults } = await import("../helpers/buildDiceResults");
+    const result = buildDiceResults({
+      roll: finalRoll,
+      rollValues: finalValues as Record<string, number>,
+      activeNotationComponents: components,
+      physicalExplosions: true,
+    });
+
+    // Total: 6 + 3 + 4 = 13 (no silent explosion double-counting)
+    expect(result.total).toBe(13);
+  });
 });

@@ -7,6 +7,8 @@ export interface Die {
   id: string;
   style: DiceStyle;
   type: DiceType;
+  /** true if this die was spawned by an exploding dice mechanic */
+  isExplosion?: boolean;
 }
 
 export function isDie(value: any): value is Die {

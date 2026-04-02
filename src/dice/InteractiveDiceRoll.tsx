@@ -3,6 +3,7 @@ import { DiceTransform } from "../types/DiceTransform";
 import { DiceRoll } from "./DiceRoll";
 import { InteractiveDice } from "./InteractiveDice";
 import { useDiceRollStore } from "./store";
+import { useExplosionWaves } from "./useExplosionWaves";
 
 /** Dice roll based off of the values from the dice roll store */
 export function InteractiveDiceRoll() {
@@ -10,13 +11,18 @@ export function InteractiveDiceRoll() {
   const rollThrows = useDiceRollStore((state) => state.rollThrows);
   const finishDieRoll = useDiceRollStore((state) => state.finishDieRoll);
 
-  const finishedTransforms = useDiceRollStore((state) => {
+  const explosionWavesActive = useExplosionWaves();
+
+  const rawFinishedTransforms = useDiceRollStore((state) => {
     const values = Object.values(state.rollTransforms);
     if (values.some((v) => v === null)) {
       return undefined;
     }
     return state.rollTransforms as Record<string, DiceTransform>;
   });
+
+  // Suppress finished state while explosion waves are still in progress
+  const finishedTransforms = explosionWavesActive ? undefined : rawFinishedTransforms;
 
   const transformsRef = useRef<Record<string, DiceTransform | null> | null>(
     null

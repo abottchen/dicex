@@ -20,6 +20,7 @@ interface DiceControlsState {
   diceHidden: boolean;
   diceRollPressTime: number | null;
   fairnessTesterOpen: boolean;
+  explosionGlowColor: string;
   activePresetName: string | null;
   activeNotation: string | null;
   activeNotationComponents: NotationComponent[] | null;
@@ -37,6 +38,7 @@ interface DiceControlsState {
   setActiveNotation: (notation: string | null) => void;
   setActiveNotationComponents: (components: NotationComponent[] | null) => void;
   toggleFairnessTester: () => void;
+  setExplosionGlowColor: (color: string) => void;
 }
 
 const initialSet = diceSets[0];
@@ -54,6 +56,7 @@ export const useDiceControlsStore = create<DiceControlsState>()(
     diceHidden: false,
     diceRollPressTime: null,
     fairnessTesterOpen: false,
+    explosionGlowColor: "#ffffff",
     activePresetName: null,
     activeNotation: null,
     activeNotationComponents: null,
@@ -147,6 +150,11 @@ export const useDiceControlsStore = create<DiceControlsState>()(
     toggleFairnessTester() {
       set((state) => {
         state.fairnessTesterOpen = !state.fairnessTesterOpen;
+      });
+    },
+    setExplosionGlowColor(color) {
+      set((state) => {
+        state.explosionGlowColor = color;
       });
     },
   }))

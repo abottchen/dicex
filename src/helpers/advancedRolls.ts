@@ -19,8 +19,6 @@ function shouldExplode(value: number, sides: number, config: ExplodeConfig): boo
   }
 }
 
-// TODO: Investigate physics-animated explosions (spawning new 3D dice per explosion) as a future enhancement.
-// Currently explosions generate random values without physics simulation.
 export function applyExplodingDice(
   dice: DieResult[],
   sides: number,

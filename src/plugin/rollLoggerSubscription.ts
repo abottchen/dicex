@@ -34,11 +34,18 @@ export function createRollLoggerSubscription(): () => void {
     if (!allFinished || prevFinished) {
       return;
     }
+
+    // Don't log while explosion waves are still processing
+    if (state.explosionWavesActive) {
+      return;
+    }
     prevFinished = true;
 
     const roll = state.roll;
     const values = state.rollValues as Record<string, number>;
     const controlsState = useDiceControlsStore.getState();
+
+    const hasPhysicalExplosions = getDieFromDice(roll).some((d) => d.isExplosion);
 
     const result = buildDiceResults({
       roll,
@@ -46,6 +53,7 @@ export function createRollLoggerSubscription(): () => void {
       activeNotation: controlsState.activeNotation,
       activePresetName: controlsState.activePresetName,
       activeNotationComponents: controlsState.activeNotationComponents,
+      physicalExplosions: hasPhysicalExplosions,
     });
 
     const entry = buildRollEntry({
