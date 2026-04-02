@@ -6,8 +6,8 @@ export interface DieResult {
   value: number;
   /** true if this die was excluded by keep/drop rules */
   dropped?: boolean;
-  /** Chain of explosion reroll values. [6, 3] means exploded to 6, then to 3 (stopped) */
-  exploded?: number[];
+  /** true if this die was spawned by an exploding dice mechanic */
+  isExplosion?: boolean;
 }
 
 /** A modifier (bonus) entry in a roll result */

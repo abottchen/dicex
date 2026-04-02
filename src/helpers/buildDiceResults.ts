@@ -3,7 +3,7 @@ import { DiceRoll } from "../types/DiceRoll";
 import { Die } from "../types/Die";
 import { getDieFromDice } from "./getDieFromDice";
 import { getCombinedDiceValue } from "./getCombinedDiceValue";
-import { applyExplodingDice, applyKeepDrop, calculateTotal } from "./advancedRolls";
+import { applyKeepDrop, calculateTotal } from "./advancedRolls";
 import { NotationComponent, DiceComponent, isModifierComponent } from "./notationParser";
 
 export interface ProcessedRollResult {
@@ -20,8 +20,6 @@ interface BuildDiceResultsInput {
   activeNotation?: string | null;
   activePresetName?: string | null;
   activeNotationComponents?: NotationComponent[] | null;
-  /** When true, explosion dice are physically rolled and their values are in rollValues. Skip silent applyExplodingDice. */
-  physicalExplosions?: boolean;
 }
 
 /**
@@ -57,7 +55,7 @@ export function buildDiceResults(input: BuildDiceResultsInput): ProcessedRollRes
   );
 
   if (hasAdvanced) {
-    return buildAdvancedResults(allDice, rollValues, diceComponents, bonus, advantage, activeNotation, activePresetName, input.physicalExplosions);
+    return buildAdvancedResults(allDice, rollValues, diceComponents, bonus, advantage, activeNotation, activePresetName);
   }
 
   return buildBasicResults(allDice, roll, rollValues, bonus, advantage, activeNotation, activePresetName);
@@ -100,7 +98,6 @@ function buildAdvancedResults(
   advantage: "adv" | "dis" | undefined,
   activeNotation?: string | null,
   activePresetName?: string | null,
-  physicalExplosions?: boolean,
 ): ProcessedRollResult {
   const diceResults: (DieResult | ModifierResult)[] = [];
 
@@ -115,10 +112,12 @@ function buildAdvancedResults(
       // For advantage rolls, the physical dice structure is nested, but getDieFromDice
       // flattens them. We match by type.
       if (die.type.toLowerCase() === `d${component.sides}`) {
-        groupDice.push({
+        const result: DieResult = {
           type: die.type.toLowerCase(),
           value: rollValues[die.id],
-        });
+        };
+        if (die.isExplosion) result.isExplosion = true;
+        groupDice.push(result);
         diceIndex++;
       } else {
         // Type mismatch — this die might belong to a different component or advantage structure
@@ -126,11 +125,6 @@ function buildAdvancedResults(
         diceIndex++;
         i--; // retry this component slot
       }
-    }
-
-    // Apply exploding dice (skip when explosions are physics-driven to avoid double-counting)
-    if (component.explode && groupDice.length > 0 && !physicalExplosions) {
-      applyExplodingDice(groupDice, component.sides, component.explode);
     }
 
     // Apply keep/drop
@@ -147,10 +141,12 @@ function buildAdvancedResults(
   // Add any remaining dice that weren't matched (safety net)
   while (diceIndex < allDice.length) {
     const die = allDice[diceIndex];
-    diceResults.push({
+    const result: DieResult = {
       type: die.type.toLowerCase(),
       value: rollValues[die.id],
-    });
+    };
+    if (die.isExplosion) result.isExplosion = true;
+    diceResults.push(result);
     diceIndex++;
   }
 

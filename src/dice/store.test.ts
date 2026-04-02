@@ -12,6 +12,36 @@ const dummyTransform = {
   rotation: { x: 0, y: 0, z: 0, w: 1 },
 };
 
+describe("useDiceRollStore.rollGeneration", () => {
+  beforeEach(() => {
+    useDiceRollStore.getState().clearRoll();
+  });
+
+  it("increments on startRoll", () => {
+    const before = useDiceRollStore.getState().rollGeneration;
+    const roll: DiceRoll = { dice: [createDie("d1")] };
+    useDiceRollStore.getState().startRoll(roll);
+    expect(useDiceRollStore.getState().rollGeneration).toBe(before + 1);
+  });
+
+  it("does not change on addExplosionDice", () => {
+    const roll: DiceRoll = { dice: [createDie("d1")] };
+    useDiceRollStore.getState().startRoll(roll);
+    const genAfterStart = useDiceRollStore.getState().rollGeneration;
+
+    const explosionDie: Die = { id: "exp1", style: "IRON" as any, type: "D6" as any, isExplosion: true };
+    const explosionThrow = {
+      position: { x: 0, y: 1, z: 0 },
+      rotation: { x: 0, y: 0, z: 0, w: 1 },
+      linearVelocity: { x: 0.1, y: 0, z: -0.1 },
+      angularVelocity: { x: 1, y: 1, z: 1 },
+    };
+    useDiceRollStore.getState().addExplosionDice([explosionDie], { exp1: explosionThrow });
+
+    expect(useDiceRollStore.getState().rollGeneration).toBe(genAfterStart);
+  });
+});
+
 describe("useDiceRollStore.addExplosionDice", () => {
   beforeEach(() => {
     useDiceRollStore.getState().clearRoll();

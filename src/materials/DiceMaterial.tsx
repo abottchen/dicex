@@ -12,12 +12,14 @@ import { WalnutMaterial } from "./walnut/WalnutMaterial";
 export function DiceMaterial({
   diceStyle,
   emissiveColor,
+  emissiveIntensity = 0.4,
 }: {
   diceStyle: DiceStyle;
   emissiveColor?: string;
+  emissiveIntensity?: number;
 }) {
   const emissiveProps = emissiveColor
-    ? { emissive: new THREE.Color(emissiveColor), emissiveIntensity: 0.4 }
+    ? { emissive: new THREE.Color(emissiveColor), emissiveIntensity }
     : {};
 
   switch (diceStyle) {
