@@ -10,6 +10,7 @@ import FairnessIcon from "@mui/icons-material/BalanceRounded";
 import TuneIcon from "@mui/icons-material/TuneRounded";
 import DownloadIcon from "@mui/icons-material/FileDownloadRounded";
 import DownloadClearIcon from "@mui/icons-material/DeleteSweepRounded";
+import PaletteIcon from "@mui/icons-material/PaletteRounded";
 import Divider from "@mui/material/Divider";
 import OBR from "@owlbear-rodeo/sdk";
 
@@ -34,6 +35,12 @@ export function ToolsMenu() {
     (state) => state.toggleFairnessTester
   );
   const clearRoll = useDiceRollStore((s) => s.clearRoll);
+  const explosionGlowColor = useDiceControlsStore(
+    (state) => state.explosionGlowColor
+  );
+  const setExplosionGlowColor = useDiceControlsStore(
+    (state) => state.setExplosionGlowColor
+  );
 
   useEffect(() => {
     if (OBR.isAvailable) {
@@ -132,6 +139,19 @@ export function ToolsMenu() {
             <FairnessIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Fairness</ListItemText>
+        </MenuItem>
+        <MenuItem sx={{ gap: 1 }}>
+          <ListItemIcon>
+            <PaletteIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Explosion Glow</ListItemText>
+          <input
+            type="color"
+            value={explosionGlowColor}
+            onChange={(e) => setExplosionGlowColor(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: 28, height: 28, border: "none", cursor: "pointer", background: "transparent" }}
+          />
         </MenuItem>
         {isPlugin && (
           <MenuItem onClick={handlePresetsOpen}>
