@@ -67,16 +67,18 @@ describe("buildRollEntry", () => {
   it("builds an exploding dice entry", () => {
     const entry = buildRollEntry({
       diceResults: [
-        { type: "d6", value: 6, exploded: [4] },
+        { type: "d6", value: 6 },
         { type: "d6", value: 3 },
-        { type: "d6", value: 6, exploded: [2] },
+        { type: "d6", value: 6 },
+        { type: "d6", value: 4, isExplosion: true },
+        { type: "d6", value: 2, isExplosion: true },
       ],
       total: 21,
       notation: "3d6!",
       preset: "Chaos Bolt",
     });
-    expect(entry.dice[0]).toEqual({ type: "d6", value: 6, exploded: [4] });
-    expect(entry.dice[2]).toEqual({ type: "d6", value: 6, exploded: [2] });
+    expect(entry.dice[3]).toEqual({ type: "d6", value: 4, isExplosion: true });
+    expect(entry.dice[4]).toEqual({ type: "d6", value: 2, isExplosion: true });
     expect(entry.total).toBe(21);
     expect(entry.preset).toBe("Chaos Bolt");
   });
@@ -121,17 +123,19 @@ describe("buildRollEntry", () => {
   it("builds an exploding + keep entry", () => {
     const entry = buildRollEntry({
       diceResults: [
-        { type: "d6", value: 6, exploded: [3] },
+        { type: "d6", value: 6 },
         { type: "d6", value: 2, dropped: true },
-        { type: "d6", value: 6, exploded: [6, 4] },
+        { type: "d6", value: 6 },
+        { type: "d6", value: 3, isExplosion: true },
+        { type: "d6", value: 4, isExplosion: true },
       ],
-      total: 25,
+      total: 19,
       notation: "3d6!k2",
     });
-    expect(entry.dice[0]).toEqual({ type: "d6", value: 6, exploded: [3] });
     expect(entry.dice[1]).toEqual({ type: "d6", value: 2, dropped: true });
-    expect(entry.dice[2]).toEqual({ type: "d6", value: 6, exploded: [6, 4] });
-    expect(entry.total).toBe(25);
+    expect(entry.dice[3]).toEqual({ type: "d6", value: 3, isExplosion: true });
+    expect(entry.dice[4]).toEqual({ type: "d6", value: 4, isExplosion: true });
+    expect(entry.total).toBe(19);
   });
 
   it("includes preset name when provided", () => {

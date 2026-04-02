@@ -109,11 +109,13 @@ describe("formatRumbleMessage", () => {
     );
   });
 
-  it("formats exploding dice with emoji prefix", () => {
+  it("formats explosion dice with emoji prefix", () => {
     const dice: DieResult[] = [
-      { type: "d6", value: 6, exploded: [4] },
+      { type: "d6", value: 6 },
       { type: "d6", value: 3 },
-      { type: "d6", value: 6, exploded: [2] },
+      { type: "d6", value: 6 },
+      { type: "d6", value: 4, isExplosion: true },
+      { type: "d6", value: 2, isExplosion: true },
     ];
     const result = formatRumbleMessage({
       playerName: "Gandalf",
@@ -122,7 +124,7 @@ describe("formatRumbleMessage", () => {
       notation: "3d6!",
     });
     expect(result).toBe(
-      "Gandalf rolled (3d6! \u2192 [\uD83D\uDCA56], [4], [3], [\uD83D\uDCA56], [2]) for **21**!"
+      "Gandalf rolled (3d6! \u2192 [6], [3], [6], [\uD83D\uDCA54], [\uD83D\uDCA52]) for **21**!"
     );
   });
 

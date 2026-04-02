@@ -45,15 +45,12 @@ export function createRollLoggerSubscription(): () => void {
     const values = state.rollValues as Record<string, number>;
     const controlsState = useDiceControlsStore.getState();
 
-    const hasPhysicalExplosions = getDieFromDice(roll).some((d) => d.isExplosion);
-
     const result = buildDiceResults({
       roll,
       rollValues: values,
       activeNotation: controlsState.activeNotation,
       activePresetName: controlsState.activePresetName,
       activeNotationComponents: controlsState.activeNotationComponents,
-      physicalExplosions: hasPhysicalExplosions,
     });
 
     const entry = buildRollEntry({

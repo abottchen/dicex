@@ -24,6 +24,7 @@ export function useExplosionWaves(): boolean {
 
   const rollValues = useDiceRollStore((state) => state.rollValues);
   const roll = useDiceRollStore((state) => state.roll);
+  const rollGeneration = useDiceRollStore((state) => state.rollGeneration);
   const addExplosionDice = useDiceRollStore((state) => state.addExplosionDice);
   const setExplosionWavesActive = useDiceRollStore((state) => state.setExplosionWavesActive);
 
@@ -37,16 +38,19 @@ export function useExplosionWaves(): boolean {
   );
   const hasExplodeConfig = diceComponents.some((c) => c.explode);
 
-  // Reset wave state when a new roll starts
+  // Reset wave state when a new roll starts.
+  // Depends on rollGeneration (incremented only in startRoll) rather than
+  // roll, because addExplosionDice also mutates roll via immer, which would
+  // reset wave tracking mid-explosion and cause infinite loops.
   useEffect(() => {
-    if (roll) {
+    if (rollGeneration > 0) {
       waveCountRef.current = 0;
       pendingExplosionIdsRef.current.clear();
       isActiveRef.current = hasExplodeConfig;
       // Set the store flag BEFORE any dice settle so the logger won't fire prematurely
       setExplosionWavesActive(hasExplodeConfig);
     }
-  }, [roll, hasExplodeConfig, setExplosionWavesActive]);
+  }, [rollGeneration, hasExplodeConfig, setExplosionWavesActive]);
 
   // Check for explosions when dice settle
   useEffect(() => {

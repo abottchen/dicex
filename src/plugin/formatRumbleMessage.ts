@@ -10,19 +10,19 @@ interface FormatRumbleMessageOptions {
   hidden?: boolean;
 }
 
-/** Returns true if any die in the array has exploded or dropped properties set */
+/** Returns true if any die in the array has explosion or dropped properties set */
 function hasAdvancedDiceProps(dice: (DieResult | ModifierResult)[]): boolean {
   return dice.some(
     (d) =>
       d.type !== "mod" &&
-      ((d as DieResult).exploded !== undefined ||
+      ((d as DieResult).isExplosion === true ||
         (d as DieResult).dropped === true)
   );
 }
 
 /**
  * Expand a DieResult into comma-separated bracket entries.
- * - Exploded dice: 💥 prefix
+ * - Explosion dice: 💥 prefix
  * - Dropped dice: 🚫 prefix
  * - Nat 20 on d20: ⭐ prefix
  * - Nat 1 on d20: 💀 prefix
@@ -33,11 +33,8 @@ function expandDieValues(die: DieResult): string[] {
 
   if (die.dropped) {
     parts.push(`[🚫${die.value}]`);
-  } else if (die.exploded && die.exploded.length > 0) {
+  } else if (die.isExplosion) {
     parts.push(`[💥${die.value}]`);
-    for (const v of die.exploded) {
-      parts.push(`[${v}]`);
-    }
   } else if (isD20 && die.value === 20) {
     parts.push(`[⭐20]`);
   } else if (isD20 && die.value === 1) {
@@ -88,7 +85,7 @@ export function formatRumbleMessage({
     }
   }
 
-  // When there's advanced notation (exploded/dropped) and exactly one dice
+  // When there's advanced notation (explosion/dropped) and exactly one dice
   // group, use the notation string as the label.
   const useNotationLabel = advanced && notation !== undefined && groups.length === 1;
 

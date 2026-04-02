@@ -34,6 +34,11 @@ export function createRumbleSyncSubscription(): () => void {
     if (!allFinished || prevFinished) {
       return;
     }
+
+    // Don't send while explosion waves are still processing
+    if (state.explosionWavesActive) {
+      return;
+    }
     prevFinished = true;
 
     const roll = state.roll;

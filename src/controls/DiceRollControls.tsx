@@ -19,7 +19,7 @@ import { RerollDiceIcon } from "../icons/RerollDiceIcon";
 import { GradientOverlay } from "./GradientOverlay";
 import { PluginGate } from "../plugin/PluginGate";
 import { PresetSave } from "./PresetSave";
-import { serializeNotation } from "../helpers/notationSerializer";
+import { serializeNotation, serializeComponents } from "../helpers/notationSerializer";
 import { buildDiceResults } from "../helpers/buildDiceResults";
 import { isModifierComponent } from "../helpers/notationParser";
 import { useDiceRollStore } from "../dice/store";
@@ -110,6 +110,9 @@ function DicePickedControls() {
   const setActiveNotation = useDiceControlsStore(
     (state) => state.setActiveNotation
   );
+  const activeNotationComponents = useDiceControlsStore(
+    (state) => state.activeNotationComponents
+  );
 
   const pushRecentRoll = useDiceHistoryStore((state) => state.pushRecentRoll);
 
@@ -126,7 +129,11 @@ function DicePickedControls() {
           }
         }
       }
-      setActiveNotation(serializeNotation(diceCountsByType, bonus));
+      setActiveNotation(
+        activeNotationComponents
+          ? serializeComponents(activeNotationComponents)
+          : serializeNotation(diceCountsByType, bonus)
+      );
 
       const dice = getDiceToRoll(counts, advantage, diceById);
       const activeTimeSeconds = (performance.now() - rollPressTime) / 1000;
@@ -360,21 +367,15 @@ function FinishedRollControls() {
     );
   }, [activeNotationComponents]);
 
-  const hasPhysicalExplosions = useMemo(() => {
-    if (!roll) return false;
-    return roll.dice.some((d) => "isExplosion" in d && (d as any).isExplosion);
-  }, [roll]);
-
   const advancedTotal = useMemo(() => {
     if (!hasAdvanced || !roll) return null;
     const result = buildDiceResults({
       roll,
       rollValues: finishedRollValues,
       activeNotationComponents,
-      physicalExplosions: hasPhysicalExplosions,
     });
     return result.total;
-  }, [hasAdvanced, roll, finishedRollValues, activeNotationComponents, hasPhysicalExplosions]);
+  }, [hasAdvanced, roll, finishedRollValues, activeNotationComponents]);
 
   const [resultsExpanded, setResultsExpanded] = useState(false);
 

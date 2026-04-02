@@ -162,12 +162,10 @@ describe("buildDiceResults", () => {
     });
 
     expect(result.dice).toHaveLength(2);
-    expect((result.dice[0] as any).exploded).toBeUndefined();
-    expect((result.dice[1] as any).exploded).toBeUndefined();
     expect(result.total).toBe(7);
   });
 
-  it("does not apply silent explosions when physicalExplosions flag is set", () => {
+  it("does not silently generate explosion values (physics-driven only)", () => {
     const roll: DiceRoll = {
       dice: [
         { id: "d1", style: "IRON" as any, type: "D6" as any },
@@ -183,10 +181,9 @@ describe("buildDiceResults", () => {
       roll,
       rollValues,
       activeNotationComponents: components,
-      physicalExplosions: true,
     });
 
-    // Total should be 6 + 4 = 10, NOT 6 + random explosion + 4
+    // Total should be 6 + 4 = 10 — no silent explosions generated
     expect(result.total).toBe(10);
   });
 });

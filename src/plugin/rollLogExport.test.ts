@@ -47,8 +47,9 @@ describe("combinePlayerLogs", () => {
             notation: "3d6!",
             preset: "Chaos Bolt",
             dice: [
-              { type: "d6", value: 6, exploded: [4] },
+              { type: "d6", value: 6 },
               { type: "d6", value: 3 },
+              { type: "d6", value: 4, isExplosion: true },
             ],
             total: 13,
           },
@@ -58,7 +59,7 @@ describe("combinePlayerLogs", () => {
     const combined = combinePlayerLogs(logs);
     const roll = combined.players["player-1"].rolls[0];
     expect(roll.preset).toBe("Chaos Bolt");
-    expect(roll.dice[0]).toEqual({ type: "d6", value: 6, exploded: [4] });
+    expect(roll.dice[2]).toEqual({ type: "d6", value: 4, isExplosion: true });
   });
 });
 

@@ -1,61 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
-import { applyExplodingDice, applyKeepDrop, calculateTotal } from "./advancedRolls";
+import { describe, it, expect } from "vitest";
+import { applyKeepDrop, calculateTotal } from "./advancedRolls";
 import { DieResult, ModifierResult } from "../types/RollResult";
-
-describe("applyExplodingDice", () => {
-  it("explodes on max value for d6", () => {
-    const mockRandom = vi.fn().mockReturnValueOnce(4);
-    const dice: DieResult[] = [{ type: "d6", value: 6 }];
-    const result = applyExplodingDice(dice, 6, { type: "max" }, mockRandom);
-    expect(result[0].exploded).toEqual([4]);
-  });
-
-  it("does not explode below max for d6", () => {
-    const dice: DieResult[] = [{ type: "d6", value: 5 }];
-    const result = applyExplodingDice(dice, 6, { type: "max" });
-    expect(result[0].exploded).toBeUndefined();
-  });
-
-  it("chains explosions: d6 rolling 6 then 6 then 3", () => {
-    const mockRandom = vi.fn().mockReturnValueOnce(6).mockReturnValueOnce(3);
-    const dice: DieResult[] = [{ type: "d6", value: 6 }];
-    const result = applyExplodingDice(dice, 6, { type: "max" }, mockRandom);
-    expect(result[0].exploded).toEqual([6, 3]);
-  });
-
-  it("explodes with gte threshold: d6 rolling 4 with !>4", () => {
-    const mockRandom = vi.fn().mockReturnValueOnce(2);
-    const dice: DieResult[] = [{ type: "d6", value: 4 }];
-    const result = applyExplodingDice(dice, 6, { type: "gte", value: 4 }, mockRandom);
-    expect(result[0].exploded).toEqual([2]);
-  });
-
-  it("does not explode with gte threshold: d6 rolling 3 with !>4", () => {
-    const dice: DieResult[] = [{ type: "d6", value: 3 }];
-    const result = applyExplodingDice(dice, 6, { type: "gte", value: 4 });
-    expect(result[0].exploded).toBeUndefined();
-  });
-
-  it("explodes with exact value: d6 rolling 3 with !3", () => {
-    const mockRandom = vi.fn().mockReturnValueOnce(5);
-    const dice: DieResult[] = [{ type: "d6", value: 3 }];
-    const result = applyExplodingDice(dice, 6, { type: "exact", value: 3 }, mockRandom);
-    expect(result[0].exploded).toEqual([5]);
-  });
-
-  it("does not explode with exact value: d6 rolling 4 with !3", () => {
-    const dice: DieResult[] = [{ type: "d6", value: 4 }];
-    const result = applyExplodingDice(dice, 6, { type: "exact", value: 3 });
-    expect(result[0].exploded).toBeUndefined();
-  });
-
-  it("caps explosions at 100 rerolls", () => {
-    const mockRandom = vi.fn().mockReturnValue(6);
-    const dice: DieResult[] = [{ type: "d6", value: 6 }];
-    const result = applyExplodingDice(dice, 6, { type: "max" }, mockRandom);
-    expect(result[0].exploded!.length).toBe(100);
-  });
-});
 
 describe("applyKeepDrop", () => {
   it("keeps highest 3 from 4d6", () => {
@@ -121,19 +66,19 @@ describe("calculateTotal", () => {
     expect(calculateTotal(dice)).toBe(7);
   });
 
-  it("sums only non-dropped dice plus explosions plus modifiers", () => {
+  it("sums non-dropped dice plus modifiers", () => {
     const dice: (DieResult | ModifierResult)[] = [
-      { type: "d6", value: 6, exploded: [3] },
+      { type: "d6", value: 6 },
       { type: "d6", value: 2, dropped: true },
-      { type: "d6", value: 6, exploded: [6, 4] },
+      { type: "d6", value: 4 },
       { type: "mod", value: 5 },
     ];
-    expect(calculateTotal(dice)).toBe(30);
+    expect(calculateTotal(dice)).toBe(15);
   });
 
-  it("excludes dropped dice and their explosions from total", () => {
+  it("excludes dropped dice from total", () => {
     const dice: DieResult[] = [
-      { type: "d6", value: 6, exploded: [2], dropped: true },
+      { type: "d6", value: 6, dropped: true },
       { type: "d6", value: 4 },
     ];
     expect(calculateTotal(dice)).toBe(4);

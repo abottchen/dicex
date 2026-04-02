@@ -28,6 +28,12 @@ interface DiceRollState {
    */
   rollThrows: Record<string, DiceThrow>;
   /**
+   * Monotonically increasing counter that increments only when startRoll
+   * is called. Used by useExplosionWaves to distinguish new rolls from
+   * explosion dice additions (which also mutate `roll`).
+   */
+  rollGeneration: number;
+  /**
    * True while explosion waves are still being processed.
    * Used to prevent the roll logger from firing prematurely.
    */
@@ -48,6 +54,7 @@ export const useDiceRollStore = create<DiceRollState>()(
     rollValues: {},
     rollTransforms: {},
     rollThrows: {},
+    rollGeneration: 0,
     explosionWavesActive: false,
     startRoll: (roll, speedMultiplier?: number) =>
       set((state) => {
@@ -55,6 +62,7 @@ export const useDiceRollStore = create<DiceRollState>()(
         state.rollValues = {};
         state.rollTransforms = {};
         state.rollThrows = {};
+        state.rollGeneration++;
         state.explosionWavesActive = false;
         // Set all values to null
         const dice = getDieFromDice(roll);
@@ -75,6 +83,22 @@ export const useDiceRollStore = create<DiceRollState>()(
     reroll: (ids, manualThrows) => {
       set((state) => {
         if (state.roll) {
+          // Remove explosion dice and their associated state before rerolling
+          // so we only reroll the original dice from the roll definition
+          const explosionIds = new Set<string>();
+          state.roll.dice = state.roll.dice.filter((dieOrDice) => {
+            if (isDie(dieOrDice) && dieOrDice.isExplosion) {
+              explosionIds.add(dieOrDice.id);
+              return false;
+            }
+            return true;
+          });
+          for (const id of explosionIds) {
+            delete state.rollValues[id];
+            delete state.rollTransforms[id];
+            delete state.rollThrows[id];
+          }
+
           rerollDraft(
             state.roll,
             ids,
@@ -83,6 +107,9 @@ export const useDiceRollStore = create<DiceRollState>()(
             state.rollTransforms,
             state.rollThrows
           );
+          // Bump generation so useExplosionWaves resets and can detect
+          // new explosions from the rerolled dice
+          state.rollGeneration++;
         }
       });
     },
