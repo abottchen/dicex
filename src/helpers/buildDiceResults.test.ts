@@ -3,6 +3,7 @@ import { buildDiceResults } from "./buildDiceResults";
 import { DiceRoll } from "../types/DiceRoll";
 import { Die } from "../types/Die";
 import { Dice } from "../types/Dice";
+import { NotationComponent } from "./notationParser";
 
 function makeDie(id: string, type: string = "D6"): Die {
   return { id, style: "GALAXY" as any, type: type as any };
@@ -164,5 +165,28 @@ describe("buildDiceResults", () => {
     expect((result.dice[0] as any).exploded).toBeUndefined();
     expect((result.dice[1] as any).exploded).toBeUndefined();
     expect(result.total).toBe(7);
+  });
+
+  it("does not apply silent explosions when physicalExplosions flag is set", () => {
+    const roll: DiceRoll = {
+      dice: [
+        { id: "d1", style: "IRON" as any, type: "D6" as any },
+        { id: "exp1", style: "IRON" as any, type: "D6" as any, isExplosion: true },
+      ],
+    };
+    const rollValues = { d1: 6, exp1: 4 };
+    const components: NotationComponent[] = [
+      { count: 1, sides: 6, explode: { type: "max" } },
+    ];
+
+    const result = buildDiceResults({
+      roll,
+      rollValues,
+      activeNotationComponents: components,
+      physicalExplosions: true,
+    });
+
+    // Total should be 6 + 4 = 10, NOT 6 + random explosion + 4
+    expect(result.total).toBe(10);
   });
 });

@@ -20,6 +20,8 @@ interface BuildDiceResultsInput {
   activeNotation?: string | null;
   activePresetName?: string | null;
   activeNotationComponents?: NotationComponent[] | null;
+  /** When true, explosion dice are physically rolled and their values are in rollValues. Skip silent applyExplodingDice. */
+  physicalExplosions?: boolean;
 }
 
 /**
@@ -55,7 +57,7 @@ export function buildDiceResults(input: BuildDiceResultsInput): ProcessedRollRes
   );
 
   if (hasAdvanced) {
-    return buildAdvancedResults(allDice, rollValues, diceComponents, bonus, advantage, activeNotation, activePresetName);
+    return buildAdvancedResults(allDice, rollValues, diceComponents, bonus, advantage, activeNotation, activePresetName, input.physicalExplosions);
   }
 
   return buildBasicResults(allDice, roll, rollValues, bonus, advantage, activeNotation, activePresetName);
@@ -98,6 +100,7 @@ function buildAdvancedResults(
   advantage: "adv" | "dis" | undefined,
   activeNotation?: string | null,
   activePresetName?: string | null,
+  physicalExplosions?: boolean,
 ): ProcessedRollResult {
   const diceResults: (DieResult | ModifierResult)[] = [];
 
@@ -125,8 +128,8 @@ function buildAdvancedResults(
       }
     }
 
-    // Apply exploding dice
-    if (component.explode && groupDice.length > 0) {
+    // Apply exploding dice (skip when explosions are physics-driven to avoid double-counting)
+    if (component.explode && groupDice.length > 0 && !physicalExplosions) {
       applyExplodingDice(groupDice, component.sides, component.explode);
     }
 
