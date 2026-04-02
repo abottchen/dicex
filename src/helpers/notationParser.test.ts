@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseNotation, NotationError } from "./notationParser";
+import { parseNotation, NotationError, DiceComponent } from "./notationParser";
 
 describe("parseNotation", () => {
   it("parses basic dice: 2d6", () => {
@@ -88,5 +88,18 @@ describe("parseNotation", () => {
 
   it("rejects malformed syntax: ddd", () => {
     expect(() => parseNotation("ddd")).toThrow(NotationError);
+  });
+
+  it("clamps dice count to 6 when explode is present", () => {
+    const result = parseNotation("12d6!");
+    const component = result[0] as DiceComponent;
+    expect(component.count).toBe(6);
+    expect(component.explode).toEqual({ type: "max" });
+  });
+
+  it("does not clamp dice count when no explode", () => {
+    const result = parseNotation("12d6");
+    const component = result[0] as DiceComponent;
+    expect(component.count).toBe(12);
   });
 });

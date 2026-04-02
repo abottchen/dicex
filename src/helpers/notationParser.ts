@@ -26,6 +26,7 @@ export function isModifierComponent(
 }
 
 const VALID_SIDES = new Set([4, 6, 8, 10, 12, 20, 100]);
+const MAX_EXPLODING_DICE = 6;
 
 // Dice regex: count d sides [explode [>value | value]] [k|d count]
 const DICE_REGEX = /^(\d+)d(\d+)(!(?:>(\d+)|(\d+))?)?(?:(k|d)(\d+))?$/;
@@ -82,6 +83,11 @@ export function parseNotation(notation: string): NotationComponent[] {
       } else {
         component.explode = { type: "max" };
       }
+    }
+
+    // Cap dice count for exploding rolls to leave room for explosion waves
+    if (component.explode && component.count > MAX_EXPLODING_DICE) {
+      component.count = MAX_EXPLODING_DICE;
     }
 
     if (keepDropChar !== undefined && keepDropVal !== undefined) {
