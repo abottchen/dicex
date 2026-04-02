@@ -25,6 +25,7 @@ export function useExplosionWaves(): boolean {
   const rollValues = useDiceRollStore((state) => state.rollValues);
   const roll = useDiceRollStore((state) => state.roll);
   const addExplosionDice = useDiceRollStore((state) => state.addExplosionDice);
+  const setExplosionWavesActive = useDiceRollStore((state) => state.setExplosionWavesActive);
 
   const activeNotationComponents = useDiceControlsStore(
     (state) => state.activeNotationComponents
@@ -42,14 +43,17 @@ export function useExplosionWaves(): boolean {
       waveCountRef.current = 0;
       pendingExplosionIdsRef.current.clear();
       isActiveRef.current = hasExplodeConfig;
+      // Set the store flag BEFORE any dice settle so the logger won't fire prematurely
+      setExplosionWavesActive(hasExplodeConfig);
     }
-  }, [roll, hasExplodeConfig]);
+  }, [roll, hasExplodeConfig, setExplosionWavesActive]);
 
   // Check for explosions when dice settle
   useEffect(() => {
     if (!isActiveRef.current || !roll) return;
     if (waveCountRef.current >= MAX_EXPLOSION_WAVES) {
       isActiveRef.current = false;
+      setExplosionWavesActive(false);
       return;
     }
 
@@ -83,6 +87,7 @@ export function useExplosionWaves(): boolean {
     if (newDice.length === 0) {
       // No more explosions — we're done
       isActiveRef.current = false;
+      setExplosionWavesActive(false);
       return;
     }
 
@@ -97,7 +102,7 @@ export function useExplosionWaves(): boolean {
     waveCountRef.current++;
 
     addExplosionDice(newDice, newThrows);
-  }, [rollValues, roll, diceComponents, addExplosionDice]);
+  }, [rollValues, roll, diceComponents, addExplosionDice, setExplosionWavesActive]);
 
   return isActiveRef.current && hasExplodeConfig;
 }

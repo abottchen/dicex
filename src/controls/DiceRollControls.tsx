@@ -360,15 +360,21 @@ function FinishedRollControls() {
     );
   }, [activeNotationComponents]);
 
+  const hasPhysicalExplosions = useMemo(() => {
+    if (!roll) return false;
+    return roll.dice.some((d) => "isExplosion" in d && (d as any).isExplosion);
+  }, [roll]);
+
   const advancedTotal = useMemo(() => {
     if (!hasAdvanced || !roll) return null;
     const result = buildDiceResults({
       roll,
       rollValues: finishedRollValues,
       activeNotationComponents,
+      physicalExplosions: hasPhysicalExplosions,
     });
     return result.total;
-  }, [hasAdvanced, roll, finishedRollValues, activeNotationComponents]);
+  }, [hasAdvanced, roll, finishedRollValues, activeNotationComponents, hasPhysicalExplosions]);
 
   const [resultsExpanded, setResultsExpanded] = useState(false);
 

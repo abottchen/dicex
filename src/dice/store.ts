@@ -27,6 +27,11 @@ interface DiceRollState {
    * A mapping from the die ID to its initial roll throw state.
    */
   rollThrows: Record<string, DiceThrow>;
+  /**
+   * True while explosion waves are still being processed.
+   * Used to prevent the roll logger from firing prematurely.
+   */
+  explosionWavesActive: boolean;
   startRoll: (roll: DiceRoll, speedMultiplier?: number) => void;
   clearRoll: (ids?: string) => void;
   /** Reroll select ids of dice or reroll all dice by passing `undefined` */
@@ -34,6 +39,7 @@ interface DiceRollState {
   finishDieRoll: (id: string, number: number, transform: DiceTransform) => void;
   /** Add explosion dice to an in-progress roll without resetting existing dice */
   addExplosionDice: (dice: Die[], throws: Record<string, DiceThrow>) => void;
+  setExplosionWavesActive: (active: boolean) => void;
 }
 
 export const useDiceRollStore = create<DiceRollState>()(
@@ -42,12 +48,14 @@ export const useDiceRollStore = create<DiceRollState>()(
     rollValues: {},
     rollTransforms: {},
     rollThrows: {},
+    explosionWavesActive: false,
     startRoll: (roll, speedMultiplier?: number) =>
       set((state) => {
         state.roll = roll;
         state.rollValues = {};
         state.rollTransforms = {};
         state.rollThrows = {};
+        state.explosionWavesActive = false;
         // Set all values to null
         const dice = getDieFromDice(roll);
         for (const die of dice) {
@@ -62,6 +70,7 @@ export const useDiceRollStore = create<DiceRollState>()(
         state.rollValues = {};
         state.rollTransforms = {};
         state.rollThrows = {};
+        state.explosionWavesActive = false;
       }),
     reroll: (ids, manualThrows) => {
       set((state) => {
@@ -94,6 +103,11 @@ export const useDiceRollStore = create<DiceRollState>()(
           state.rollTransforms[die.id] = null;
           state.rollThrows[die.id] = throws[die.id];
         }
+      });
+    },
+    setExplosionWavesActive: (active) => {
+      set((state) => {
+        state.explosionWavesActive = active;
       });
     },
   }))
