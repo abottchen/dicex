@@ -4,9 +4,9 @@ import { useDiceControlsStore } from "../controls/store";
 import { getDieFromDice } from "../helpers/getDieFromDice";
 import { buildDiceResults } from "../helpers/buildDiceResults";
 import { formatRumbleMessage } from "./formatRumbleMessage";
-import { getRumbleTargets } from "./getRumbleTargets";
+import { getRumbleRecipients } from "./getRumbleRecipients";
 
-const RUMBLE_CHAT_KEY = "com.battle-system.friends/metadata_chatlog";
+const RUMBLE_CHANNEL = "RUMBLECHAT";
 
 export function createRumbleSyncSubscription(): () => void {
   let prevFinished = false;
@@ -35,7 +35,6 @@ export function createRumbleSyncSubscription(): () => void {
       return;
     }
 
-    // Don't send while explosion waves are still processing
     if (state.explosionWavesActive) {
       return;
     }
@@ -59,8 +58,9 @@ export function createRumbleSyncSubscription(): () => void {
     Promise.all([
       OBR.player.getName(),
       OBR.player.getRole(),
+      OBR.player.getColor(),
       OBR.party.getPlayers(),
-    ]).then(([playerName, role, players]) => {
+    ]).then(([playerName, role, playerColor, players]) => {
       const message = formatRumbleMessage({
         playerName,
         dice: result.dice,
@@ -72,25 +72,33 @@ export function createRumbleSyncSubscription(): () => void {
       });
 
       const gmPlayer = players.find((p: any) => p.role === "GM");
-      const gmObrId =
-        role === "GM" ? playerObrId : gmPlayer?.id ?? playerObrId;
+      const gmName = gmPlayer?.name ?? playerName;
+      const gmObrId = gmPlayer?.id ?? playerObrId;
 
-      const targets = getRumbleTargets({
+      const recipients = getRumbleRecipients({
         hidden,
+        playerName,
         playerObrId,
-        gmObrId,
         playerRole: role,
+        gmName,
+        gmObrId,
       });
 
-      for (const targetId of targets) {
-        OBR.player.setMetadata({
-          [RUMBLE_CHAT_KEY]: {
-            chatlog: message,
-            created: new Date().toISOString(),
-            sender: "Dicex",
-            targetId,
-          },
-        });
+      for (const recipient of recipients) {
+        const payload = {
+          chatlog: message,
+          sender: "Dicex",
+          senderId: playerObrId,
+          target: recipient.target,
+          targetId: recipient.targetId,
+          color: playerColor,
+          messageId: crypto.randomUUID(),
+        };
+        OBR.broadcast.sendMessage(
+          RUMBLE_CHANNEL,
+          { channel: RUMBLE_CHANNEL, data: payload },
+          { destination: "ALL" }
+        );
       }
     });
   });

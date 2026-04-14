@@ -6,8 +6,6 @@ import { useDiceControlsStore } from "../controls/store";
 import { useDiceRollStore } from "../dice/store";
 import { createRumbleSyncSubscription } from "../plugin/rumbleSyncSubscription";
 
-const RUMBLE_CHAT_KEY = "com.battle-system.friends/metadata_chatlog";
-
 describe("reroll detection", () => {
   let unsubscribe: () => void;
 
@@ -25,7 +23,7 @@ describe("reroll detection", () => {
     useDiceControlsStore.setState({ activeNotation: "2d6" });
     simulateRoll({ dice: [{ type: "D6", value: 3 }, { type: "D6", value: 4 }] });
     await flushPromises();
-    expect(obrCalls.playerSetMetadata.length).toBe(1);
+    expect(obrCalls.broadcast.length).toBe(1);
 
     // Reroll
     useDiceRollStore.getState().reroll();
@@ -40,14 +38,14 @@ describe("reroll detection", () => {
     }
     await flushPromises();
 
-    expect(obrCalls.playerSetMetadata.length).toBe(2);
+    expect(obrCalls.broadcast.length).toBe(2);
   });
 
   it("does not double-fire after reroll completes", async () => {
     useDiceControlsStore.setState({ activeNotation: "1d6" });
     simulateRoll({ dice: [{ type: "D6", value: 3 }] });
     await flushPromises();
-    expect(obrCalls.playerSetMetadata.length).toBe(1);
+    expect(obrCalls.broadcast.length).toBe(1);
 
     // Reroll and complete
     useDiceRollStore.getState().reroll();
@@ -60,10 +58,10 @@ describe("reroll detection", () => {
       useDiceRollStore.getState().finishDieRoll(id, 4, dummyTransform);
     }
     await flushPromises();
-    expect(obrCalls.playerSetMetadata.length).toBe(2);
+    expect(obrCalls.broadcast.length).toBe(2);
 
     // Wait again — should not fire again
     await flushPromises();
-    expect(obrCalls.playerSetMetadata.length).toBe(2);
+    expect(obrCalls.broadcast.length).toBe(2);
   });
 });

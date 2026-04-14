@@ -24,11 +24,17 @@ vi.mock("../previews/all.png", () => ({ default: "all.png" }));
 export const obrCalls = {
   playerSetMetadata: [] as Record<string, unknown>[],
   roomSetMetadata: [] as Record<string, unknown>[],
+  broadcast: [] as {
+    channel: string;
+    data: unknown;
+    options?: { destination: "REMOTE" | "LOCAL" | "ALL" };
+  }[],
 };
 
 export const obrConfig = {
   playerId: "player-1",
   playerName: "Gandalf",
+  playerColor: "#ff0000",
   playerRole: "PLAYER" as "GM" | "PLAYER",
   partyPlayers: [
     { id: "gm-1", role: "GM", name: "DM", connectionId: "c1", metadata: {} },
@@ -42,6 +48,7 @@ vi.mock("@owlbear-rodeo/sdk", () => ({
       get id() { return obrConfig.playerId; },
       getName: vi.fn(() => Promise.resolve(obrConfig.playerName)),
       getRole: vi.fn(() => Promise.resolve(obrConfig.playerRole)),
+      getColor: vi.fn(() => Promise.resolve(obrConfig.playerColor)),
       setMetadata: vi.fn((data: Record<string, unknown>) => {
         obrCalls.playerSetMetadata.push(data);
         return Promise.resolve();
@@ -57,6 +64,18 @@ vi.mock("@owlbear-rodeo/sdk", () => ({
     },
     party: {
       getPlayers: vi.fn(() => Promise.resolve([...obrConfig.partyPlayers])),
+    },
+    broadcast: {
+      sendMessage: vi.fn(
+        (
+          channel: string,
+          data: unknown,
+          options?: { destination: "REMOTE" | "LOCAL" | "ALL" }
+        ) => {
+          obrCalls.broadcast.push({ channel, data, options });
+          return Promise.resolve();
+        }
+      ),
     },
     isAvailable: false,
     onReady: vi.fn((cb: () => void) => cb()),
@@ -80,9 +99,11 @@ export function resetStores() {
 export function resetObrCalls() {
   obrCalls.playerSetMetadata.length = 0;
   obrCalls.roomSetMetadata.length = 0;
+  obrCalls.broadcast.length = 0;
   obrConfig.roomMetadata = {};
   obrConfig.playerId = "player-1";
   obrConfig.playerName = "Gandalf";
+  obrConfig.playerColor = "#ff0000";
   obrConfig.playerRole = "PLAYER";
   obrConfig.partyPlayers = [
     { id: "gm-1", role: "GM", name: "DM", connectionId: "c1", metadata: {} },
