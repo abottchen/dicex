@@ -10,6 +10,8 @@ import Box from "@mui/material/Box";
 
 import { InteractiveDiceRoll } from "../dice/InteractiveDiceRoll";
 import { DiceRollControls } from "../controls/DiceRollControls";
+import { NotationInput } from "../controls/NotationInput";
+import { useDiceControlsStore } from "../controls/store";
 import environment from "../environment.hdr";
 import { AudioListenerProvider } from "../audio/AudioListenerProvider";
 import { Tray } from "./Tray";
@@ -21,6 +23,9 @@ import { FairnessTester } from "../tests/FairnessTester";
 /** Dice tray that controls the dice roll store */
 export function InteractiveTray() {
   const allowOrbit = useDebugStore((state) => state.allowOrbit);
+  const notationInputEnabled = useDiceControlsStore(
+    (s) => s.notationInputEnabled
+  );
 
   return (
     <Box
@@ -65,6 +70,7 @@ export function InteractiveTray() {
         </Canvas>
       </TraySuspense>
       <DiceRollControls />
+      {notationInputEnabled && <NotationInput />}
       <FairnessTester />
     </Box>
   );

@@ -1,23 +1,21 @@
 import { useDiceControlsStore } from "../controls/store";
-import { parseNotation, isModifierComponent } from "./notationParser";
+import { resolveNotationAgainstSet } from "./resolveNotationAgainstSet";
 
 export function loadPresetIntoControls(notation: string, name: string) {
-  const components = parseNotation(notation);
   const store = useDiceControlsStore.getState();
+  const { counts, bonus, components } = resolveNotationAgainstSet(
+    notation,
+    store.diceSet
+  );
+
   store.resetDiceCounts();
-  store.setDiceBonus(0);
+  store.setDiceBonus(bonus);
   store.setActivePresetName(name);
   store.setActiveNotationComponents(components);
 
-  for (const component of components) {
-    if (isModifierComponent(component)) {
-      store.setDiceBonus(component.modifier);
-    } else {
-      const typeStr = `D${component.sides}`;
-      const die = store.diceSet.dice.find((d) => d.type === typeStr);
-      if (die) {
-        store.changeDieCount(die.id, component.count);
-      }
+  for (const [dieId, count] of Object.entries(counts)) {
+    if (count > 0) {
+      store.changeDieCount(dieId, count);
     }
   }
 }
