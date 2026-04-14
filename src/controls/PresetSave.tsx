@@ -17,6 +17,7 @@ import OBR from "@owlbear-rodeo/sdk";
 import { useDiceControlsStore } from "./store";
 import { useDiceRollStore } from "../dice/store";
 import { serializeNotation } from "../helpers/notationSerializer";
+import { parseNotation } from "../helpers/notationParser";
 import { savePreset, loadPresets, Preset } from "../plugin/presetStorage";
 
 export function PresetSave() {
@@ -27,24 +28,41 @@ export function PresetSave() {
   const diceCounts = useDiceControlsStore((state) => state.diceCounts);
   const diceById = useDiceControlsStore((state) => state.diceById);
   const diceBonus = useDiceControlsStore((state) => state.diceBonus);
+  const notationInputText = useDiceControlsStore(
+    (state) => state.notationInputText
+  );
   const roll = useDiceRollStore((state) => state.roll);
 
-  // Build notation from current dice selection
-  const diceCountsByType: Record<string, number> = {};
-  for (const [id, count] of Object.entries(diceCounts)) {
-    if (count > 0) {
-      const die = diceById[id];
-      if (die) {
-        const key = die.type.toLowerCase();
-        diceCountsByType[key] = (diceCountsByType[key] || 0) + count;
+  // Prefer notation-input text when present and valid; fall back to
+  // the notation built from the tray's picked dice.
+  const trimmedText = notationInputText.trim();
+  let notation: string;
+  let textIsValid = false;
+  if (trimmedText !== "") {
+    try {
+      parseNotation(trimmedText);
+      textIsValid = true;
+      notation = trimmedText;
+    } catch {
+      notation = trimmedText;
+    }
+  } else {
+    const diceCountsByType: Record<string, number> = {};
+    for (const [id, count] of Object.entries(diceCounts)) {
+      if (count > 0) {
+        const die = diceById[id];
+        if (die) {
+          const key = die.type.toLowerCase();
+          diceCountsByType[key] = (diceCountsByType[key] || 0) + count;
+        }
       }
     }
+    notation = serializeNotation(diceCountsByType, diceBonus);
   }
-  const notation = serializeNotation(diceCountsByType, diceBonus);
-  const hasDiceSelected = Object.values(diceCounts).some((c) => c > 0);
 
-  // Only enabled when dice are selected but not yet rolled
-  const enabled = hasDiceSelected && !roll;
+  const hasDiceSelected = Object.values(diceCounts).some((c) => c > 0);
+  const enabled =
+    ((trimmedText !== "" && textIsValid) || hasDiceSelected) && !roll;
 
   async function handleOpen() {
     const presets = await loadPresets(OBR.player.id);

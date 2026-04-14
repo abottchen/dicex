@@ -1,12 +1,14 @@
-import { KeyboardEvent, useMemo, useState } from "react";
+import { KeyboardEvent, useMemo } from "react";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 
+import { useDiceControlsStore } from "./store";
 import { NotationError, parseNotation } from "../helpers/notationParser";
 import { rollFromNotation } from "../helpers/rollFromNotation";
 
 export function NotationInput() {
-  const [value, setValue] = useState("");
+  const value = useDiceControlsStore((s) => s.notationInputText);
+  const setValue = useDiceControlsStore((s) => s.setNotationInputText);
 
   const error = useMemo(() => {
     const trimmed = value.trim();
