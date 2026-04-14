@@ -5,7 +5,13 @@ import {
 import { useDiceControlsStore } from "../controls/store";
 import { createRumbleSyncSubscription } from "./rumbleSyncSubscription";
 
-const RUMBLE_CHAT_KEY = "com.battle-system.friends/metadata_chatlog";
+const RUMBLE_CHANNEL = "RUMBLECHAT";
+
+function chatPayload(index = 0): any {
+  const call = obrCalls.broadcast[index];
+  expect(call.channel).toBe(RUMBLE_CHANNEL);
+  return (call.data as any).data;
+}
 
 describe("RumbleSync subscription", () => {
   let unsubscribe: () => void;
@@ -20,17 +26,25 @@ describe("RumbleSync subscription", () => {
     unsubscribe();
   });
 
-  it("posts basic roll to party chat", async () => {
+  it("broadcasts basic roll to everyone on the RUMBLECHAT channel", async () => {
     useDiceControlsStore.setState({ activeNotation: "2d6" });
     simulateRoll({ dice: [{ type: "D6", value: 3 }, { type: "D6", value: 4 }] });
     await flushPromises();
 
-    expect(obrCalls.playerSetMetadata.length).toBe(1);
-    const call = obrCalls.playerSetMetadata[0] as any;
-    const chat = call[RUMBLE_CHAT_KEY];
-    expect(chat.sender).toBe("Dicex");
-    expect(chat.targetId).toBe("0000");
-    expect(chat.chatlog).toContain("for **7**!");
+    expect(obrCalls.broadcast.length).toBe(1);
+    const call = obrCalls.broadcast[0];
+    expect(call.channel).toBe(RUMBLE_CHANNEL);
+    expect(call.options).toEqual({ destination: "ALL" });
+    const wrapper = call.data as any;
+    expect(wrapper.channel).toBe(RUMBLE_CHANNEL);
+    const payload = wrapper.data;
+    expect(payload.sender).toBe("Dicex");
+    expect(payload.senderId).toBe(obrConfig.playerId);
+    expect(payload.target).toBe("Everyone");
+    expect(payload.targetId).toBe("0000");
+    expect(payload.color).toBe(obrConfig.playerColor);
+    expect(typeof payload.messageId).toBe("string");
+    expect(payload.chatlog).toContain("for **7**!");
   });
 
   it("includes bonus in message", async () => {
@@ -38,9 +52,9 @@ describe("RumbleSync subscription", () => {
     simulateRoll({ dice: [{ type: "D20", value: 12 }], bonus: 5 });
     await flushPromises();
 
-    const chat = (obrCalls.playerSetMetadata[0] as any)[RUMBLE_CHAT_KEY];
-    expect(chat.chatlog).toContain("+5");
-    expect(chat.chatlog).toContain("for **17**!");
+    const payload = chatPayload();
+    expect(payload.chatlog).toContain("+5");
+    expect(payload.chatlog).toContain("for **17**!");
   });
 
   it("includes preset name in message", async () => {
@@ -57,8 +71,7 @@ describe("RumbleSync subscription", () => {
     });
     await flushPromises();
 
-    const chat = (obrCalls.playerSetMetadata[0] as any)[RUMBLE_CHAT_KEY];
-    expect(chat.chatlog).toContain("used [Fireball] and rolled");
+    expect(chatPayload().chatlog).toContain("used [Fireball] and rolled");
   });
 
   it("shows adv suffix for advantage roll", async () => {
@@ -69,8 +82,7 @@ describe("RumbleSync subscription", () => {
     });
     await flushPromises();
 
-    const chat = (obrCalls.playerSetMetadata[0] as any)[RUMBLE_CHAT_KEY];
-    expect(chat.chatlog).toContain("adv");
+    expect(chatPayload().chatlog).toContain("adv");
   });
 
   it("shows star emoji for nat 20", async () => {
@@ -78,8 +90,7 @@ describe("RumbleSync subscription", () => {
     simulateRoll({ dice: [{ type: "D20", value: 20 }] });
     await flushPromises();
 
-    const chat = (obrCalls.playerSetMetadata[0] as any)[RUMBLE_CHAT_KEY];
-    expect(chat.chatlog).toContain("\u2B50");
+    expect(chatPayload().chatlog).toContain("\u2B50");
   });
 
   it("shows skull emoji for nat 1", async () => {
@@ -87,8 +98,7 @@ describe("RumbleSync subscription", () => {
     simulateRoll({ dice: [{ type: "D20", value: 1 }] });
     await flushPromises();
 
-    const chat = (obrCalls.playerSetMetadata[0] as any)[RUMBLE_CHAT_KEY];
-    expect(chat.chatlog).toContain("\uD83D\uDC80");
+    expect(chatPayload().chatlog).toContain("\uD83D\uDC80");
   });
 
   it("formats multiple dice groups correctly", async () => {
@@ -101,10 +111,10 @@ describe("RumbleSync subscription", () => {
     });
     await flushPromises();
 
-    const chat = (obrCalls.playerSetMetadata[0] as any)[RUMBLE_CHAT_KEY];
-    expect(chat.chatlog).toContain("2d6");
-    expect(chat.chatlog).toContain("1d8");
-    expect(chat.chatlog).toContain("for **12**!");
+    const payload = chatPayload();
+    expect(payload.chatlog).toContain("2d6");
+    expect(payload.chatlog).toContain("1d8");
+    expect(payload.chatlog).toContain("for **12**!");
   });
 
   it("shows lock emoji for hidden rolls", async () => {
@@ -112,7 +122,34 @@ describe("RumbleSync subscription", () => {
     simulateRoll({ dice: [{ type: "D20", value: 10 }], hidden: true });
     await flushPromises();
 
-    const chat = (obrCalls.playerSetMetadata[0] as any)[RUMBLE_CHAT_KEY];
-    expect(chat.chatlog).toContain("\uD83D\uDD12");
+    expect(chatPayload().chatlog).toContain("\uD83D\uDD12");
+  });
+
+  it("sends hidden roll separately to self and GM", async () => {
+    useDiceControlsStore.setState({ activeNotation: "1d20" });
+    simulateRoll({ dice: [{ type: "D20", value: 10 }], hidden: true });
+    await flushPromises();
+
+    expect(obrCalls.broadcast.length).toBe(2);
+    const first = (obrCalls.broadcast[0].data as any).data;
+    const second = (obrCalls.broadcast[1].data as any).data;
+    const targetIds = [first.targetId, second.targetId].sort();
+    expect(targetIds).toEqual(["gm-1", "player-1"].sort());
+    obrCalls.broadcast.forEach((call) => {
+      expect(call.options).toEqual({ destination: "ALL" });
+    });
+  });
+
+  it("sends hidden roll from GM only to GM", async () => {
+    obrConfig.playerRole = "GM";
+    obrConfig.playerId = "gm-1";
+    obrConfig.partyPlayers = [];
+    useDiceControlsStore.setState({ activeNotation: "1d20" });
+    simulateRoll({ dice: [{ type: "D20", value: 10 }], hidden: true });
+    await flushPromises();
+
+    expect(obrCalls.broadcast.length).toBe(1);
+    const payload = chatPayload();
+    expect(payload.targetId).toBe("gm-1");
   });
 });

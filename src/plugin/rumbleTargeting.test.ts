@@ -1,34 +1,43 @@
 import { describe, it, expect } from "vitest";
-import { getRumbleTargets } from "./getRumbleTargets";
+import { getRumbleRecipients } from "./getRumbleRecipients";
 
-describe("getRumbleTargets", () => {
-  it("returns party target for normal roll", () => {
-    const targets = getRumbleTargets({
+describe("getRumbleRecipients", () => {
+  it("returns 'Everyone' recipient for normal roll", () => {
+    const recipients = getRumbleRecipients({
       hidden: false,
+      playerName: "Gandalf",
       playerObrId: "player-1",
-      gmObrId: "gm-1",
       playerRole: "PLAYER",
+      gmName: "DM",
+      gmObrId: "gm-1",
     });
-    expect(targets).toEqual(["0000"]);
+    expect(recipients).toEqual([{ target: "Everyone", targetId: "0000" }]);
   });
 
-  it("returns player and GM targets for hidden roll by player", () => {
-    const targets = getRumbleTargets({
+  it("returns player and GM recipients for hidden roll by player", () => {
+    const recipients = getRumbleRecipients({
       hidden: true,
+      playerName: "Gandalf",
       playerObrId: "player-1",
-      gmObrId: "gm-1",
       playerRole: "PLAYER",
+      gmName: "DM",
+      gmObrId: "gm-1",
     });
-    expect(targets).toEqual(["player-1", "gm-1"]);
+    expect(recipients).toEqual([
+      { target: "Gandalf", targetId: "player-1" },
+      { target: "DM", targetId: "gm-1" },
+    ]);
   });
 
-  it("returns only GM target for hidden roll by GM (no duplicate)", () => {
-    const targets = getRumbleTargets({
+  it("returns only GM recipient for hidden roll by GM (no duplicate)", () => {
+    const recipients = getRumbleRecipients({
       hidden: true,
+      playerName: "DM",
       playerObrId: "gm-1",
-      gmObrId: "gm-1",
       playerRole: "GM",
+      gmName: "DM",
+      gmObrId: "gm-1",
     });
-    expect(targets).toEqual(["gm-1"]);
+    expect(recipients).toEqual([{ target: "DM", targetId: "gm-1" }]);
   });
 });

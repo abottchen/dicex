@@ -11,8 +11,11 @@ import { DiceRoll } from "../types/DiceRoll";
 import { Die } from "../types/Die";
 import { DiceStyle } from "../types/DiceStyle";
 
-const RUMBLE_CHAT_KEY = "com.battle-system.friends/metadata_chatlog";
 const LOG_KEY_PREFIX = "com.dicex/roll-log/";
+
+function latestChatPayload(): any {
+  return (obrCalls.broadcast[0].data as any).data;
+}
 
 function createTestDie(type: string, id: string): Die {
   return { id, type: type as any, style: "IRON" as DiceStyle };
@@ -61,7 +64,7 @@ describe("advanced roll integration", () => {
     await flushPromises();
 
     // Check Rumble message
-    const chat = (obrCalls.playerSetMetadata[0] as any)[RUMBLE_CHAT_KEY];
+    const chat = latestChatPayload();
     expect(chat.chatlog).toContain("\uD83D\uDEAB"); // drop emoji
     expect(chat.chatlog).toContain("for **15**!"); // 5+4+6, dropping 2
 
@@ -99,7 +102,7 @@ describe("advanced roll integration", () => {
 
     await flushPromises();
 
-    const chat = (obrCalls.playerSetMetadata[0] as any)[RUMBLE_CHAT_KEY];
+    const chat = latestChatPayload();
     expect(chat.chatlog).toContain("for **12**!"); // 3+5+4, dropping 1
 
     const logKey = `${LOG_KEY_PREFIX}player-1`;
@@ -156,7 +159,7 @@ describe("advanced roll integration", () => {
 
     await flushPromises();
 
-    const chat = (obrCalls.playerSetMetadata[0] as any)[RUMBLE_CHAT_KEY];
+    const chat = latestChatPayload();
     // Should contain explosion emoji for the 6s
     expect(chat.chatlog).toContain("\uD83D\uDCA5"); // explosion emoji
     // Total: 6 + 3 + 6 + 4 + 2 = 21
