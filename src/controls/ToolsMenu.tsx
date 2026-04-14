@@ -148,30 +148,6 @@ export function ToolsMenu() {
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         transformOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <MenuItem
-          onClick={() => {
-            handleClose();
-            toggleFairnessTester();
-          }}
-        >
-          <ListItemIcon>
-            <FairnessIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Fairness</ListItemText>
-        </MenuItem>
-        <MenuItem sx={{ gap: 1 }}>
-          <ListItemIcon>
-            <PaletteIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Explosion Glow</ListItemText>
-          <input
-            type="color"
-            value={explosionGlowColor}
-            onChange={(e) => setExplosionGlowColor(e.target.value)}
-            onClick={(e) => e.stopPropagation()}
-            style={{ width: 28, height: 28, border: "none", cursor: "pointer", background: "transparent" }}
-          />
-        </MenuItem>
         {isPlugin && (
           <MenuItem onClick={handlePresetsOpen}>
             <ListItemIcon>
@@ -194,6 +170,30 @@ export function ToolsMenu() {
             />
           </MenuItem>
         )}
+        <MenuItem sx={{ gap: 1 }}>
+          <ListItemIcon>
+            <PaletteIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Explosion Glow</ListItemText>
+          <input
+            type="color"
+            value={explosionGlowColor}
+            onChange={(e) => setExplosionGlowColor(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: 28, height: 28, border: "none", cursor: "pointer", background: "transparent" }}
+          />
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            handleClose();
+            toggleFairnessTester();
+          }}
+        >
+          <ListItemIcon>
+            <FairnessIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Fairness</ListItemText>
+        </MenuItem>
         {isPlugin && isGM && <Divider />}
         {isPlugin && isGM && (
           <MenuItem onClick={handleDownload}>
