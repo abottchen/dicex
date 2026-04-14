@@ -45,6 +45,10 @@ export function DiceRollControls() {
   const counts = useDiceControlsStore((state) => state.diceCounts);
   const bonus = useDiceControlsStore((state) => state.diceBonus);
   const advantage = useDiceControlsStore((state) => state.diceAdvantage);
+  const notationInputText = useDiceControlsStore(
+    (state) => state.notationInputText
+  );
+  const hasNotationText = notationInputText.trim() !== "";
   // Is currently the default dice state (all counts 0 and advantage/bonus defaults)
   const isDefault = useMemo(
     () =>
@@ -57,6 +61,7 @@ export function DiceRollControls() {
   );
 
   const rollValues = useDiceRollStore((state) => state.rollValues);
+  const rollActive = useDiceRollStore((state) => state.roll !== null);
   const finishedRolling = useMemo(() => {
     const values = Object.values(rollValues);
     if (values.length === 0) {
@@ -66,7 +71,7 @@ export function DiceRollControls() {
     }
   }, [rollValues]);
 
-  if (!isDefault) {
+  if ((!isDefault || hasNotationText) && !rollActive) {
     return (
       <Fade in>
         <span>
@@ -103,6 +108,9 @@ function DicePickedControls() {
 
   const resetDiceCounts = useDiceControlsStore(
     (state) => state.resetDiceCounts
+  );
+  const setNotationInputText = useDiceControlsStore(
+    (state) => state.setNotationInputText
   );
   const setActivePresetName = useDiceControlsStore(
     (state) => state.setActivePresetName
@@ -157,6 +165,7 @@ function DicePickedControls() {
     resetDiceCounts();
     setBonus(0);
     setAdvantage(null);
+    setNotationInputText("");
   }
 
   const rollPressTime = useDiceControlsStore(

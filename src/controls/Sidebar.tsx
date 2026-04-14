@@ -14,6 +14,7 @@ import { useDiceControlsStore } from "./store";
 import { ToolsMenu } from "./ToolsMenu";
 
 import { PluginGate } from "../plugin/PluginGate";
+import { loadSetting } from "../plugin/userSettingsStorage";
 import { DiceRollSync } from "../plugin/DiceRollSync";
 import { RumbleSync } from "../plugin/RumbleSync";
 import { RollLogger } from "../plugin/RollLogger";
@@ -25,6 +26,20 @@ function HiddenInitializer() {
   useEffect(() => {
     OBR.player.getRole().then((role) => initializeHidden(role));
   }, [initializeHidden]);
+  return null;
+}
+
+function NotationInputInitializer() {
+  const setNotationInputEnabled = useDiceControlsStore(
+    (s) => s.setNotationInputEnabled
+  );
+  useEffect(() => {
+    loadSetting<boolean>(
+      "notation-input-enabled",
+      OBR.player.id,
+      false
+    ).then(setNotationInputEnabled);
+  }, [setNotationInputEnabled]);
   return null;
 }
 
@@ -49,6 +64,7 @@ export function Sidebar() {
         <ToolsMenu />
         <PluginGate>
           <HiddenInitializer />
+          <NotationInputInitializer />
           <Divider flexItem sx={{ mx: 1 }} />
           <DiceRollSync />
           <RumbleSync />

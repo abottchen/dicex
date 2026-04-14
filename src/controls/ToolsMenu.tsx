@@ -12,6 +12,8 @@ import DownloadIcon from "@mui/icons-material/FileDownloadRounded";
 import DownloadClearIcon from "@mui/icons-material/DeleteSweepRounded";
 import PaletteIcon from "@mui/icons-material/PaletteRounded";
 import Divider from "@mui/material/Divider";
+import Switch from "@mui/material/Switch";
+import KeyboardIcon from "@mui/icons-material/KeyboardRounded";
 import OBR from "@owlbear-rodeo/sdk";
 
 import { useDiceControlsStore } from "./store";
@@ -19,6 +21,7 @@ import { useDiceRollStore } from "../dice/store";
 import { PresetEditor } from "./PresetEditor";
 import { loadPresets, Preset } from "../plugin/presetStorage";
 import { loadPresetIntoControls } from "../helpers/loadPresetIntoControls";
+import { saveSetting } from "../plugin/userSettingsStorage";
 import { combinePlayerLogs, triggerJsonDownload } from "../plugin/rollLogExport";
 
 const LOG_KEY_PREFIX = "com.dicex/roll-log/";
@@ -41,6 +44,22 @@ export function ToolsMenu() {
   const setExplosionGlowColor = useDiceControlsStore(
     (state) => state.setExplosionGlowColor
   );
+  const notationInputEnabled = useDiceControlsStore(
+    (state) => state.notationInputEnabled
+  );
+  const setNotationInputEnabled = useDiceControlsStore(
+    (state) => state.setNotationInputEnabled
+  );
+
+  function handleToggleNotationInput() {
+    const next = !notationInputEnabled;
+    setNotationInputEnabled(next);
+    if (isPlugin) {
+      saveSetting("notation-input-enabled", OBR.player.id, next).catch(
+        () => {}
+      );
+    }
+  }
 
   useEffect(() => {
     if (OBR.isAvailable) {
@@ -129,17 +148,28 @@ export function ToolsMenu() {
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         transformOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <MenuItem
-          onClick={() => {
-            handleClose();
-            toggleFairnessTester();
-          }}
-        >
-          <ListItemIcon>
-            <FairnessIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Fairness</ListItemText>
-        </MenuItem>
+        {isPlugin && (
+          <MenuItem onClick={handlePresetsOpen}>
+            <ListItemIcon>
+              <TuneIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Presets</ListItemText>
+          </MenuItem>
+        )}
+        {isPlugin && (
+          <MenuItem onClick={handleToggleNotationInput}>
+            <ListItemIcon>
+              <KeyboardIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Notation Input</ListItemText>
+            <Switch
+              edge="end"
+              checked={notationInputEnabled}
+              onChange={handleToggleNotationInput}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </MenuItem>
+        )}
         <MenuItem sx={{ gap: 1 }}>
           <ListItemIcon>
             <PaletteIcon fontSize="small" />
@@ -153,14 +183,17 @@ export function ToolsMenu() {
             style={{ width: 28, height: 28, border: "none", cursor: "pointer", background: "transparent" }}
           />
         </MenuItem>
-        {isPlugin && (
-          <MenuItem onClick={handlePresetsOpen}>
-            <ListItemIcon>
-              <TuneIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Presets</ListItemText>
-          </MenuItem>
-        )}
+        <MenuItem
+          onClick={() => {
+            handleClose();
+            toggleFairnessTester();
+          }}
+        >
+          <ListItemIcon>
+            <FairnessIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Fairness</ListItemText>
+        </MenuItem>
         {isPlugin && isGM && <Divider />}
         {isPlugin && isGM && (
           <MenuItem onClick={handleDownload}>
