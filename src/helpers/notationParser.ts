@@ -36,26 +36,56 @@ export function parseNotation(notation: string): NotationComponent[] {
     throw new NotationError("Notation cannot be empty");
   }
 
-  const terms = notation.split(/\s*\+\s*/);
+  // Tokenize into operators (+/-) and term bodies (runs of non-whitespace,
+  // non-operator characters). Whitespace is ignored.
+  const tokens = notation.match(/[+-]|[^\s+-]+/g) ?? [];
+  if (tokens.length === 0) {
+    throw new NotationError(`Invalid notation: "${notation}"`);
+  }
+
   const components: NotationComponent[] = [];
+  let sign: 1 | -1 = 1;
+  let expectTerm = true; // true at start and after each operator
+  let seenTerm = false;
 
-  for (const term of terms) {
-    const trimmed = term.trim();
-    if (trimmed === "") {
-      throw new NotationError(`Invalid notation: empty term in "${notation}"`);
-    }
-
-    // Check if it's a plain modifier number
-    if (/^\d+$/.test(trimmed)) {
-      components.push({ modifier: parseInt(trimmed, 10) });
+  for (const token of tokens) {
+    if (token === "+" || token === "-") {
+      if (expectTerm && seenTerm) {
+        // Compound sign like "1d20+-2" or "1d20-+2"
+        throw new NotationError(
+          `Invalid notation: compound signs in "${notation}"`
+        );
+      }
+      sign = token === "-" ? -1 : 1;
+      expectTerm = true;
       continue;
     }
 
-    // Try to match dice pattern
-    const match = DICE_REGEX.exec(trimmed);
+    if (!expectTerm) {
+      throw new NotationError(
+        `Invalid notation: missing operator before "${token}" in "${notation}"`
+      );
+    }
+
+    // Plain numeric modifier
+    if (/^\d+$/.test(token)) {
+      components.push({ modifier: sign * parseInt(token, 10) });
+      sign = 1;
+      expectTerm = false;
+      seenTerm = true;
+      continue;
+    }
+
+    if (sign === -1) {
+      throw new NotationError(
+        `Cannot subtract dice: "-${token}" in "${notation}"`
+      );
+    }
+
+    const match = DICE_REGEX.exec(token);
     if (!match) {
       throw new NotationError(
-        `Invalid dice notation: "${trimmed}" in "${notation}"`
+        `Invalid dice notation: "${token}" in "${notation}"`
       );
     }
 
@@ -95,7 +125,7 @@ export function parseNotation(notation: string): NotationComponent[] {
       if (keepDropChar === "k") {
         if (n > count) {
           throw new NotationError(
-            `Keep count (${n}) cannot exceed dice count (${count}) in "${trimmed}"`
+            `Keep count (${n}) cannot exceed dice count (${count}) in "${token}"`
           );
         }
         component.keep = n;
@@ -103,7 +133,7 @@ export function parseNotation(notation: string): NotationComponent[] {
         // drop
         if (n >= count) {
           throw new NotationError(
-            `Drop count (${n}) must be less than dice count (${count}) in "${trimmed}"`
+            `Drop count (${n}) must be less than dice count (${count}) in "${token}"`
           );
         }
         component.drop = n;
@@ -111,6 +141,15 @@ export function parseNotation(notation: string): NotationComponent[] {
     }
 
     components.push(component);
+    sign = 1;
+    expectTerm = false;
+    seenTerm = true;
+  }
+
+  if (expectTerm) {
+    throw new NotationError(
+      `Invalid notation: trailing operator in "${notation}"`
+    );
   }
 
   return components;
