@@ -85,4 +85,24 @@ describe("rollFromNotation integration", () => {
     expect(payload.chatlog).toContain("for **17**!");
     expect(payload.targetId).toBe("0000");
   });
+
+  it("starts a roll with a negative modifier from `1d20-2`", () => {
+    const started = rollFromNotation("1d20-2");
+    expect(started).toBe(true);
+
+    const roll = useDiceRollStore.getState().roll;
+    expect(roll).not.toBeNull();
+    expect(roll!.bonus).toBe(-2);
+  });
+
+  it("broadcasts a chatlog reflecting a negative modifier total", async () => {
+    rollFromNotation("1d20-3");
+    finishAllDice(15);
+    await flushPromises();
+
+    expect(obrCalls.broadcast.length).toBe(1);
+    const payload = (obrCalls.broadcast[0].data as any).data;
+    expect(payload.chatlog).toContain("-3");
+    expect(payload.chatlog).toContain("for **12**!");
+  });
 });

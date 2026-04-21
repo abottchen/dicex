@@ -25,23 +25,37 @@ export function serializeNotation(
     parts.push(`${count}${type}`);
   }
 
+  let result = parts.join("+");
+
   if (bonus && bonus !== 0) {
-    parts.push(`${bonus}`);
+    if (result === "") {
+      result = `${bonus}`;
+    } else if (bonus > 0) {
+      result += `+${bonus}`;
+    } else {
+      result += `${bonus}`;
+    }
   }
 
-  return parts.join("+");
+  return result;
 }
 
 /**
  * Serialize parsed notation components back into a notation string,
- * preserving explode/keep/drop modifiers (e.g. "3d6!k2+5").
+ * preserving explode/keep/drop modifiers (e.g. "3d6!k2+5", "1d20-2").
  */
 export function serializeComponents(components: NotationComponent[]): string {
-  const parts: string[] = [];
+  let result = "";
 
   for (const component of components) {
     if (isModifierComponent(component)) {
-      parts.push(`${component.modifier}`);
+      if (result === "") {
+        result = `${component.modifier}`;
+      } else if (component.modifier >= 0) {
+        result += `+${component.modifier}`;
+      } else {
+        result += `${component.modifier}`;
+      }
       continue;
     }
 
@@ -69,8 +83,8 @@ export function serializeComponents(components: NotationComponent[]): string {
       part += `d${dc.drop}`;
     }
 
-    parts.push(part);
+    result = result === "" ? part : `${result}+${part}`;
   }
 
-  return parts.join("+");
+  return result;
 }

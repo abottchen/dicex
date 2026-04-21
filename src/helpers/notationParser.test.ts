@@ -102,4 +102,62 @@ describe("parseNotation", () => {
     const component = result[0] as DiceComponent;
     expect(component.count).toBe(12);
   });
+
+  it("parses dice with negative modifier: 1d20-2", () => {
+    const result = parseNotation("1d20-2");
+    expect(result).toEqual([{ count: 1, sides: 20 }, { modifier: -2 }]);
+  });
+
+  it("parses mixed signs: 1d20+5-2", () => {
+    const result = parseNotation("1d20+5-2");
+    expect(result).toEqual([
+      { count: 1, sides: 20 },
+      { modifier: 5 },
+      { modifier: -2 },
+    ]);
+  });
+
+  it("handles whitespace around minus: 1d20 - 2", () => {
+    const result = parseNotation("1d20 - 2");
+    expect(result).toEqual([{ count: 1, sides: 20 }, { modifier: -2 }]);
+  });
+
+  it("parses leading negative modifier: -3+1d20", () => {
+    const result = parseNotation("-3+1d20");
+    expect(result).toEqual([{ modifier: -3 }, { count: 1, sides: 20 }]);
+  });
+
+  it("parses leading positive sign: +1d20", () => {
+    const result = parseNotation("+1d20");
+    expect(result).toEqual([{ count: 1, sides: 20 }]);
+  });
+
+  it("parses standalone negative modifier: -5", () => {
+    const result = parseNotation("-5");
+    expect(result).toEqual([{ modifier: -5 }]);
+  });
+
+  it("rejects negative dice count: 1d20-1d8", () => {
+    expect(() => parseNotation("1d20-1d8")).toThrow(NotationError);
+  });
+
+  it("rejects compound signs: 1d20+-2", () => {
+    expect(() => parseNotation("1d20+-2")).toThrow(NotationError);
+  });
+
+  it("rejects compound signs: 1d20-+2", () => {
+    expect(() => parseNotation("1d20-+2")).toThrow(NotationError);
+  });
+
+  it("rejects trailing operator: 1d20+", () => {
+    expect(() => parseNotation("1d20+")).toThrow(NotationError);
+  });
+
+  it("rejects trailing minus: 1d20-", () => {
+    expect(() => parseNotation("1d20-")).toThrow(NotationError);
+  });
+
+  it("rejects bare operator: -", () => {
+    expect(() => parseNotation("-")).toThrow(NotationError);
+  });
 });
