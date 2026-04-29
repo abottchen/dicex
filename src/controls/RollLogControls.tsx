@@ -5,8 +5,7 @@ import DownloadIcon from "@mui/icons-material/FileDownloadRounded";
 import DownloadClearIcon from "@mui/icons-material/DeleteSweepRounded";
 import OBR from "@owlbear-rodeo/sdk";
 import { combinePlayerLogs, triggerJsonDownload } from "../plugin/rollLogExport";
-
-const LOG_KEY_PREFIX = "com.dicex/roll-log/";
+import { getPlayerLogs, clearPlayerLogs } from "../plugin/rollLogStorage";
 
 export function RollLogControls() {
   const [isGM, setIsGM] = useState(false);
@@ -17,18 +16,6 @@ export function RollLogControls() {
 
   if (!isGM) return null;
 
-  async function getPlayerLogs() {
-    const metadata = await OBR.room.getMetadata();
-    const logs: Record<string, any> = {};
-    for (const [key, value] of Object.entries(metadata)) {
-      if (key.startsWith(LOG_KEY_PREFIX)) {
-        const playerId = key.slice(LOG_KEY_PREFIX.length);
-        logs[playerId] = value;
-      }
-    }
-    return logs;
-  }
-
   async function handleDownload() {
     const logs = await getPlayerLogs();
     const combined = combinePlayerLogs(logs);
@@ -38,14 +25,7 @@ export function RollLogControls() {
 
   async function handleDownloadAndClear() {
     await handleDownload();
-    const metadata = await OBR.room.getMetadata();
-    const clearObj: Record<string, undefined> = {};
-    for (const key of Object.keys(metadata)) {
-      if (key.startsWith(LOG_KEY_PREFIX)) {
-        clearObj[key] = undefined;
-      }
-    }
-    await OBR.room.setMetadata(clearObj);
+    await clearPlayerLogs();
   }
 
   return (

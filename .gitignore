@@ -25,3 +25,6 @@ dist-ssr
 
 # Planning docs (local only)
 docs/superpowers/
+
+# Claude Code
+.claude/

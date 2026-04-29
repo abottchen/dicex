@@ -70,7 +70,10 @@ describe("advanced roll integration", () => {
 
     // Check audit log
     const logKey = `${LOG_KEY_PREFIX}player-1`;
-    const entry = (obrCalls.roomSetMetadata[0] as any)[logKey].rolls[0];
+    const sceneData = obrCalls.sceneSetMetadata.find(
+      (call: any) => call[logKey] !== undefined
+    ) as any;
+    const entry = sceneData[logKey].rolls[0];
     expect(entry.total).toBe(15);
     const dropped = entry.dice.filter((d: any) => d.dropped);
     expect(dropped.length).toBe(1);
@@ -106,7 +109,10 @@ describe("advanced roll integration", () => {
     expect(chat.chatlog).toContain("for **12**!"); // 3+5+4, dropping 1
 
     const logKey = `${LOG_KEY_PREFIX}player-1`;
-    const entry = (obrCalls.roomSetMetadata[0] as any)[logKey].rolls[0];
+    const sceneData = obrCalls.sceneSetMetadata.find(
+      (call: any) => call[logKey] !== undefined
+    ) as any;
+    const entry = sceneData[logKey].rolls[0];
     expect(entry.total).toBe(12);
   });
 
