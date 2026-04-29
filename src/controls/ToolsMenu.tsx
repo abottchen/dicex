@@ -14,6 +14,7 @@ import PaletteIcon from "@mui/icons-material/PaletteRounded";
 import Divider from "@mui/material/Divider";
 import Switch from "@mui/material/Switch";
 import KeyboardIcon from "@mui/icons-material/KeyboardRounded";
+import StorageIcon from "@mui/icons-material/SdStorageRounded";
 import OBR from "@owlbear-rodeo/sdk";
 
 import { useDiceControlsStore } from "./store";
@@ -23,7 +24,8 @@ import { loadPresets, Preset } from "../plugin/presetStorage";
 import { loadPresetIntoControls } from "../helpers/loadPresetIntoControls";
 import { saveSetting } from "../plugin/userSettingsStorage";
 import { combinePlayerLogs, triggerJsonDownload } from "../plugin/rollLogExport";
-import { getPlayerLogs, clearPlayerLogs } from "../plugin/rollLogStorage";
+import { getPlayerLogs, clearPlayerLogs, getManifest, SceneLogManifest } from "../plugin/rollLogStorage";
+import { StorageStatusDialog } from "./StorageStatusDialog";
 
 export function ToolsMenu() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -32,6 +34,8 @@ export function ToolsMenu() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [isGM, setIsGM] = useState(false);
   const [isPlugin, setIsPlugin] = useState(false);
+  const [storageDialogOpen, setStorageDialogOpen] = useState(false);
+  const [manifest, setManifest] = useState<Record<string, SceneLogManifest>>({});
 
   const toggleFairnessTester = useDiceControlsStore(
     (state) => state.toggleFairnessTester
@@ -65,6 +69,7 @@ export function ToolsMenu() {
       OBR.onReady(() => {
         setIsPlugin(true);
         OBR.player.getRole().then((role) => setIsGM(role === "GM"));
+        getManifest().then(setManifest);
       });
     }
   }, []);
@@ -87,6 +92,20 @@ export function ToolsMenu() {
 
   function handlePresetsClose() {
     setPresetAnchorEl(null);
+  }
+
+  function getStorageStatusColor(): "inherit" | "warning" | "error" {
+    const entries = Object.values(manifest);
+    if (entries.some((e) => e.sizeBytes / 65536 >= 0.8)) return "error";
+    if (entries.some((e) => e.sizeBytes / 65536 >= 0.5)) return "warning";
+    return "inherit";
+  }
+
+  async function handleStorageStatus() {
+    handleClose();
+    const m = await getManifest();
+    setManifest(m);
+    setStorageDialogOpen(true);
   }
 
   function handleSelectPreset(preset: Preset) {
@@ -191,6 +210,16 @@ export function ToolsMenu() {
             <ListItemText>Download & Clear</ListItemText>
           </MenuItem>
         )}
+        {isPlugin && isGM && (
+          <MenuItem onClick={handleStorageStatus}>
+            <ListItemIcon>
+              <StorageIcon fontSize="small" color={getStorageStatusColor()} />
+            </ListItemIcon>
+            <ListItemText>
+              Storage Status
+            </ListItemText>
+          </MenuItem>
+        )}
       </Menu>
       <Menu
         anchorEl={presetAnchorEl}
@@ -227,6 +256,11 @@ export function ToolsMenu() {
           onSave={() => {}}
         />
       )}
+      <StorageStatusDialog
+        open={storageDialogOpen}
+        onClose={() => setStorageDialogOpen(false)}
+        manifest={manifest}
+      />
     </>
   );
 }
