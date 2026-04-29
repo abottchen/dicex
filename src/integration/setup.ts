@@ -89,6 +89,10 @@ vi.mock("@owlbear-rodeo/sdk", () => ({
     party: {
       getPlayers: vi.fn(() => Promise.resolve([...obrConfig.partyPlayers])),
     },
+    notification: {
+      show: vi.fn(() => Promise.resolve("notification-id")),
+      close: vi.fn(() => Promise.resolve()),
+    },
     broadcast: {
       sendMessage: vi.fn(
         (

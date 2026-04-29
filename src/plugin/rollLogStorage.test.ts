@@ -189,6 +189,23 @@ describe("rollLogStorage", () => {
       expect(manifest[sceneId].sceneName).toBe("Unknown Scene");
     });
 
+    it("ignores non-IMAGE items on the MAP layer", async () => {
+      obrConfig.sceneItems = [
+        { id: "shape-1", name: "Rectangle", layer: "MAP", type: "SHAPE" },
+        { id: "img-1", name: "Dragon's Lair", layer: "MAP", type: "IMAGE" },
+      ];
+
+      const entry = makeEntry();
+      await appendRollEntry("player-1", "Gandalf", entry);
+
+      const sceneId = obrConfig.sceneMetadata[SCENE_ID_KEY] as string;
+      const manifest = obrConfig.roomMetadata[MANIFEST_KEY] as Record<
+        string,
+        SceneLogManifest
+      >;
+      expect(manifest[sceneId].sceneName).toBe("Dragon's Lair");
+    });
+
     it("reuses existing scene ID", async () => {
       obrConfig.sceneMetadata[SCENE_ID_KEY] = "existing-scene-id";
       obrConfig.sceneItems = [

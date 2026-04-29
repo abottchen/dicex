@@ -19,6 +19,7 @@ interface PlayerLog {
   rolls: RollEntry[];
 }
 
+
 /** Read the roll-log manifest from room metadata. */
 export async function getManifest(): Promise<Record<string, SceneLogManifest>> {
   const metadata = await OBR.room.getMetadata();
@@ -43,6 +44,11 @@ export async function getPlayerLogs(): Promise<Record<string, PlayerLog>> {
 /**
  * Append a roll entry to a player's log in the current scene,
  * and update the room-level manifest.
+ *
+ * Each player writes to their own key in scene metadata, so concurrent
+ * rolls from different players don't conflict (OBR merges by key).
+ * The manifest is recomputed from scene data rather than incremented,
+ * so even if two manifest writes race, values self-heal on the next roll.
  */
 export async function appendRollEntry(
   playerId: string,
@@ -51,7 +57,6 @@ export async function appendRollEntry(
 ): Promise<void> {
   const sceneId = await ensureSceneId();
 
-  // Read existing player log from scene metadata
   const sceneMetadata = await OBR.scene.getMetadata();
   const logKey = `${LOG_KEY_PREFIX}${playerId}`;
   const existingLog = (sceneMetadata[logKey] as PlayerLog | undefined) ?? {
@@ -59,46 +64,12 @@ export async function appendRollEntry(
     rolls: [],
   };
 
-  const oldSize = JSON.stringify(existingLog).length;
-  const isNewPlayer = existingLog.rolls.length === 0;
-
-  // Append the new entry
   existingLog.name = playerName;
   existingLog.rolls.push(entry);
 
-  const newSize = JSON.stringify(existingLog).length;
-  const sizeDelta = newSize - (isNewPlayer ? 0 : oldSize);
-
-  // Write updated player log to scene metadata
   await OBR.scene.setMetadata({ [logKey]: existingLog });
 
-  // Update the room-level manifest
-  const roomMetadata = await OBR.room.getMetadata();
-  const manifest =
-    (roomMetadata[MANIFEST_KEY] as Record<string, SceneLogManifest>) ?? {};
-
-  const existing = manifest[sceneId];
-
-  if (existing) {
-    existing.rollCount += 1;
-    existing.sizeBytes += sizeDelta;
-    existing.lastUpdated = entry.timestamp;
-    if (isNewPlayer) {
-      existing.playerCount += 1;
-    }
-  } else {
-    // First manifest entry for this scene - get the scene name
-    const sceneName = await getSceneName();
-    manifest[sceneId] = {
-      sceneName,
-      playerCount: 1,
-      rollCount: 1,
-      sizeBytes: newSize,
-      lastUpdated: entry.timestamp,
-    };
-  }
-
-  await OBR.room.setMetadata({ [MANIFEST_KEY]: manifest });
+  await updateManifest(sceneId, entry.timestamp);
 }
 
 /**
@@ -108,7 +79,6 @@ export async function clearPlayerLogs(): Promise<void> {
   const sceneMetadata = await OBR.scene.getMetadata();
   const sceneId = sceneMetadata[SCENE_ID_KEY] as string | undefined;
 
-  // Build an update that sets all log keys to undefined (deletes them)
   const clearUpdate: Record<string, undefined> = {};
   for (const key of Object.keys(sceneMetadata)) {
     if (key.startsWith(LOG_KEY_PREFIX)) {
@@ -120,7 +90,6 @@ export async function clearPlayerLogs(): Promise<void> {
     await OBR.scene.setMetadata(clearUpdate);
   }
 
-  // Remove this scene from the room manifest
   if (sceneId) {
     const roomMetadata = await OBR.room.getMetadata();
     const manifest =
@@ -128,6 +97,39 @@ export async function clearPlayerLogs(): Promise<void> {
     delete manifest[sceneId];
     await OBR.room.setMetadata({ [MANIFEST_KEY]: manifest });
   }
+}
+
+/**
+ * Recompute the manifest entry for this scene from actual scene data.
+ * This avoids incremental counter drift when multiple players write
+ * concurrently from separate browser tabs.
+ */
+async function updateManifest(sceneId: string, timestamp: string): Promise<void> {
+  const logs = await getPlayerLogs();
+  const playerIds = Object.keys(logs);
+
+  let rollCount = 0;
+  let sizeBytes = 0;
+  for (const log of Object.values(logs)) {
+    rollCount += log.rolls.length;
+    sizeBytes += JSON.stringify(log).length;
+  }
+
+  const roomMetadata = await OBR.room.getMetadata();
+  const manifest =
+    (roomMetadata[MANIFEST_KEY] as Record<string, SceneLogManifest>) ?? {};
+
+  const sceneName = manifest[sceneId]?.sceneName ?? await getSceneName();
+
+  manifest[sceneId] = {
+    sceneName,
+    playerCount: playerIds.length,
+    rollCount,
+    sizeBytes,
+    lastUpdated: timestamp,
+  };
+
+  await OBR.room.setMetadata({ [MANIFEST_KEY]: manifest });
 }
 
 /** Ensure the current scene has a unique ID, generating one if needed. */
@@ -143,11 +145,11 @@ async function ensureSceneId(): Promise<string> {
   return newId;
 }
 
-/** Get the scene name from the first MAP layer item, or "Unknown Scene". */
 async function getSceneName(): Promise<string> {
   const items = await OBR.scene.items.getItems();
   const mapItem = items.find(
-    (item: { layer: string; name: string }) => item.layer === "MAP",
+    (item: { layer: string; type: string }) =>
+      item.layer === "MAP" && item.type === "IMAGE",
   );
   return mapItem?.name || "Unknown Scene";
 }

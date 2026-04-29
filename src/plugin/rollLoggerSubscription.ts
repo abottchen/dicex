@@ -60,8 +60,13 @@ export function createRollLoggerSubscription(): () => void {
     });
 
     const playerId = OBR.player.id;
-    OBR.player.getName().then((playerName) => {
-      appendRollEntry(playerId, playerName, entry);
-    });
+    OBR.player.getName().then((playerName) =>
+      appendRollEntry(playerId, playerName, entry).catch(() => {
+        OBR.notification.show(
+          "Dicex: Failed to save roll to log. Your roll result is still valid, but it won't appear in the session log.",
+          "ERROR",
+        );
+      }),
+    );
   });
 }
