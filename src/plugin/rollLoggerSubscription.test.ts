@@ -5,8 +5,6 @@ import {
 import { useDiceControlsStore } from "../controls/store";
 import { createRollLoggerSubscription } from "./rollLoggerSubscription";
 
-const LOG_KEY_PREFIX = "com.dicex/roll-log/";
-
 describe("RollLogger subscription", () => {
   let unsubscribe: () => void;
 
@@ -25,21 +23,29 @@ describe("RollLogger subscription", () => {
     simulateRoll({ dice: [{ type: "D20", value: 15 }] });
     await flushPromises();
 
-    expect(obrCalls.roomSetMetadata.length).toBe(1);
-    const data = obrCalls.roomSetMetadata[0] as any;
-    const logKey = `${LOG_KEY_PREFIX}player-1`;
-    expect(data[logKey]).toBeDefined();
-    expect(data[logKey].name).toBe("Gandalf");
-    expect(data[logKey].rolls).toHaveLength(1);
-    const entry = data[logKey].rolls[0];
+    const sceneData = obrCalls.sceneSetMetadata.find(
+      (call: any) => call["com.dicex/roll-log/player-1"] !== undefined
+    ) as any;
+    const logKey = "com.dicex/roll-log/player-1";
+    expect(sceneData).toBeDefined();
+    expect(sceneData[logKey].name).toBe("Gandalf");
+    expect(sceneData[logKey].rolls).toHaveLength(1);
+    const entry = sceneData[logKey].rolls[0];
     expect(entry.total).toBe(15);
     expect(entry.notation).toBe("1d20");
     expect(entry.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+
+    // Room metadata should have the manifest
+    expect(obrCalls.roomSetMetadata.length).toBeGreaterThanOrEqual(1);
+    const manifestCall = obrCalls.roomSetMetadata.find(
+      (call: any) => call["com.dicex/roll-log-manifest"] !== undefined
+    ) as any;
+    expect(manifestCall).toBeDefined();
   });
 
   it("appends to existing log entries", async () => {
-    const logKey = `${LOG_KEY_PREFIX}player-1`;
-    obrConfig.roomMetadata[logKey] = {
+    const logKey = "com.dicex/roll-log/player-1";
+    obrConfig.sceneMetadata[logKey] = {
       name: "Gandalf",
       rolls: [{ timestamp: "2026-01-01T00:00:00.000Z", notation: "1d6", dice: [{ type: "d6", value: 3 }], total: 3 }],
     };
@@ -48,9 +54,11 @@ describe("RollLogger subscription", () => {
     simulateRoll({ dice: [{ type: "D20", value: 18 }] });
     await flushPromises();
 
-    const data = obrCalls.roomSetMetadata[0] as any;
-    expect(data[logKey].rolls).toHaveLength(2);
-    expect(data[logKey].rolls[1].total).toBe(18);
+    const sceneData = obrCalls.sceneSetMetadata.find(
+      (call: any) => call[logKey] !== undefined
+    ) as any;
+    expect(sceneData[logKey].rolls).toHaveLength(2);
+    expect(sceneData[logKey].rolls[1].total).toBe(18);
   });
 
   it("includes preset name when set", async () => {
@@ -67,8 +75,11 @@ describe("RollLogger subscription", () => {
     });
     await flushPromises();
 
-    const logKey = `${LOG_KEY_PREFIX}player-1`;
-    const entry = (obrCalls.roomSetMetadata[0] as any)[logKey].rolls[0];
+    const logKey = "com.dicex/roll-log/player-1";
+    const sceneData = obrCalls.sceneSetMetadata.find(
+      (call: any) => call[logKey] !== undefined
+    ) as any;
+    const entry = sceneData[logKey].rolls[0];
     expect(entry.preset).toBe("Fireball");
   });
 
@@ -80,8 +91,11 @@ describe("RollLogger subscription", () => {
     });
     await flushPromises();
 
-    const logKey = `${LOG_KEY_PREFIX}player-1`;
-    const entry = (obrCalls.roomSetMetadata[0] as any)[logKey].rolls[0];
+    const logKey = "com.dicex/roll-log/player-1";
+    const sceneData = obrCalls.sceneSetMetadata.find(
+      (call: any) => call[logKey] !== undefined
+    ) as any;
+    const entry = sceneData[logKey].rolls[0];
     expect(entry.advantage).toBe("adv");
   });
 
@@ -90,8 +104,11 @@ describe("RollLogger subscription", () => {
     simulateRoll({ dice: [{ type: "D20", value: 12 }], bonus: 5 });
     await flushPromises();
 
-    const logKey = `${LOG_KEY_PREFIX}player-1`;
-    const entry = (obrCalls.roomSetMetadata[0] as any)[logKey].rolls[0];
+    const logKey = "com.dicex/roll-log/player-1";
+    const sceneData = obrCalls.sceneSetMetadata.find(
+      (call: any) => call[logKey] !== undefined
+    ) as any;
+    const entry = sceneData[logKey].rolls[0];
     const mod = entry.dice.find((d: any) => d.type === "mod");
     expect(mod).toBeDefined();
     expect(mod.value).toBe(5);
