@@ -40,8 +40,8 @@ export function StorageStatusDialog({ open, onClose, manifest }: StorageStatusDi
             const sizeKB = (entry.sizeBytes / 1024).toFixed(1);
             const color = getStatusColor(entry.sizeBytes);
             return (
-              <Box key={sceneId} sx={{ mb: 2 }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+              <Box key={sceneId} component="div" sx={{ mb: 2 }}>
+                <Box component="div" sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
                   <Typography variant="body2" fontWeight="bold">
                     {entry.sceneName}
                   </Typography>
