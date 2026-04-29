@@ -28,3 +28,4 @@ docs/superpowers/
 
 # Claude Code
 .claude/
+.mcp.json
