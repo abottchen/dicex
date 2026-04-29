@@ -23,8 +23,7 @@ import { loadPresets, Preset } from "../plugin/presetStorage";
 import { loadPresetIntoControls } from "../helpers/loadPresetIntoControls";
 import { saveSetting } from "../plugin/userSettingsStorage";
 import { combinePlayerLogs, triggerJsonDownload } from "../plugin/rollLogExport";
-
-const LOG_KEY_PREFIX = "com.dicex/roll-log/";
+import { getPlayerLogs, clearPlayerLogs } from "../plugin/rollLogStorage";
 
 export function ToolsMenu() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -101,18 +100,6 @@ export function ToolsMenu() {
     }
   }
 
-  async function getPlayerLogs() {
-    const metadata = await OBR.room.getMetadata();
-    const logs: Record<string, any> = {};
-    for (const [key, value] of Object.entries(metadata)) {
-      if (key.startsWith(LOG_KEY_PREFIX)) {
-        const playerId = key.slice(LOG_KEY_PREFIX.length);
-        logs[playerId] = value;
-      }
-    }
-    return logs;
-  }
-
   async function handleDownload() {
     handleClose();
     const logs = await getPlayerLogs();
@@ -124,14 +111,7 @@ export function ToolsMenu() {
   async function handleDownloadAndClear() {
     handleClose();
     await handleDownload();
-    const metadata = await OBR.room.getMetadata();
-    const clearObj: Record<string, undefined> = {};
-    for (const key of Object.keys(metadata)) {
-      if (key.startsWith(LOG_KEY_PREFIX)) {
-        clearObj[key] = undefined;
-      }
-    }
-    await OBR.room.setMetadata(clearObj);
+    await clearPlayerLogs();
   }
 
   return (
