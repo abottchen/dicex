@@ -24,6 +24,7 @@ vi.mock("../previews/all.png", () => ({ default: "all.png" }));
 export const obrCalls = {
   playerSetMetadata: [] as Record<string, unknown>[],
   roomSetMetadata: [] as Record<string, unknown>[],
+  sceneSetMetadata: [] as Record<string, unknown>[],
   broadcast: [] as {
     channel: string;
     data: unknown;
@@ -40,7 +41,19 @@ export const obrConfig = {
     { id: "gm-1", role: "GM", name: "DM", connectionId: "c1", metadata: {} },
   ] as any[],
   roomMetadata: {} as Record<string, unknown>,
+  sceneMetadata: {} as Record<string, unknown>,
+  sceneItems: [] as { id: string; name: string; layer: string; type: string }[],
 };
+
+function applyMetadataUpdate(target: Record<string, unknown>, data: Record<string, unknown>) {
+  for (const [key, value] of Object.entries(data)) {
+    if (value === undefined) {
+      delete target[key];
+    } else {
+      target[key] = value;
+    }
+  }
+}
 
 vi.mock("@owlbear-rodeo/sdk", () => ({
   default: {
@@ -57,10 +70,21 @@ vi.mock("@owlbear-rodeo/sdk", () => ({
     room: {
       getMetadata: vi.fn(() => Promise.resolve({ ...obrConfig.roomMetadata })),
       setMetadata: vi.fn((data: Record<string, unknown>) => {
-        Object.assign(obrConfig.roomMetadata, data);
+        applyMetadataUpdate(obrConfig.roomMetadata, data);
         obrCalls.roomSetMetadata.push(data);
         return Promise.resolve();
       }),
+    },
+    scene: {
+      getMetadata: vi.fn(() => Promise.resolve({ ...obrConfig.sceneMetadata })),
+      setMetadata: vi.fn((data: Record<string, unknown>) => {
+        applyMetadataUpdate(obrConfig.sceneMetadata, data);
+        obrCalls.sceneSetMetadata.push(data);
+        return Promise.resolve();
+      }),
+      items: {
+        getItems: vi.fn(() => Promise.resolve([...obrConfig.sceneItems])),
+      },
     },
     party: {
       getPlayers: vi.fn(() => Promise.resolve([...obrConfig.partyPlayers])),
@@ -99,8 +123,11 @@ export function resetStores() {
 export function resetObrCalls() {
   obrCalls.playerSetMetadata.length = 0;
   obrCalls.roomSetMetadata.length = 0;
+  obrCalls.sceneSetMetadata.length = 0;
   obrCalls.broadcast.length = 0;
   obrConfig.roomMetadata = {};
+  obrConfig.sceneMetadata = {};
+  obrConfig.sceneItems = [];
   obrConfig.playerId = "player-1";
   obrConfig.playerName = "Gandalf";
   obrConfig.playerColor = "#ff0000";
