@@ -59,8 +59,7 @@ export function buildDicePlusResult(
       if (isMod(entry)) break;
       if (entry.type !== expectedType) break;
       const isExplosion = entry.isExplosion === true;
-      const isOriginalSlotFilled =
-        groupDice.filter((d) => true).length >= dc.count;
+      const isOriginalSlotFilled = groupDice.length >= dc.count;
       // Original dice fill first; any remaining same-type entries that are
       // explosion dice continue to belong to this group.
       if (isOriginalSlotFilled && !isExplosion) break;
