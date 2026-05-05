@@ -1,5 +1,6 @@
 import OBR from "@owlbear-rodeo/sdk";
 import { getPluginId } from "./plugin/getPluginId";
+import { mountDicePlusBackgroundListeners } from "./plugin/dicePlusBackgroundListeners";
 
 OBR.onReady(() => {
   OBR.popover.open({
@@ -13,4 +14,6 @@ OBR.onReady(() => {
     hidePaper: true,
     marginThreshold: 0,
   });
+
+  mountDicePlusBackgroundListeners();
 });
