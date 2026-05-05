@@ -79,3 +79,27 @@ export interface RollErrorMessage {
 export function rollTargetIsHidden(target: RollTarget): boolean {
   return target !== "everyone";
 }
+
+export function isRollRequest(data: unknown): data is RollRequest {
+  if (typeof data !== "object" || data === null) return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.rollId === "string" &&
+    typeof d.playerId === "string" &&
+    typeof d.playerName === "string" &&
+    typeof d.diceNotation === "string" &&
+    typeof d.source === "string" &&
+    (d.rollTarget === "everyone" ||
+      d.rollTarget === "self" ||
+      d.rollTarget === "dm" ||
+      d.rollTarget === "gm_only")
+  );
+}
+
+export function isIsReadyRequest(data: unknown): data is IsReadyRequest {
+  if (typeof data !== "object" || data === null) return false;
+  const d = data as Record<string, unknown>;
+  // Reject our own outbound responses (which carry ready: true).
+  if (d.ready === true) return false;
+  return typeof d.requestId === "string";
+}

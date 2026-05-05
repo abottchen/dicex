@@ -3,10 +3,10 @@ import { parseNotation, NotationError } from "../helpers/notationParser";
 import {
   DICE_PLUS_IS_READY_CHANNEL,
   DICE_PLUS_ROLL_REQUEST_CHANNEL,
-  IsReadyRequest,
   IsReadyResponse,
-  RollRequest,
   RollErrorMessage,
+  isIsReadyRequest,
+  isRollRequest,
   rollErrorChannel,
 } from "./dicePlusProtocol";
 import { relayRollRequest } from "./dicePlusBackgroundCoordinator";
@@ -16,9 +16,8 @@ export function mountDicePlusBackgroundListeners(): () => void {
   const unsubReady = OBR.broadcast.onMessage(
     DICE_PLUS_IS_READY_CHANNEL,
     (event) => {
-      const req = event.data as IsReadyRequest;
-      // Ignore our own response (which goes out on the same channel).
-      if ((event.data as Partial<IsReadyResponse>).ready === true) return;
+      if (!isIsReadyRequest(event.data)) return;
+      const req = event.data;
 
       const response: IsReadyResponse = {
         requestId: req.requestId,
@@ -36,7 +35,8 @@ export function mountDicePlusBackgroundListeners(): () => void {
   const unsubRoll = OBR.broadcast.onMessage(
     DICE_PLUS_ROLL_REQUEST_CHANNEL,
     (event) => {
-      const payload = event.data as RollRequest;
+      if (!isRollRequest(event.data)) return;
+      const payload = event.data;
 
       try {
         parseNotation(payload.diceNotation);
@@ -56,7 +56,19 @@ export function mountDicePlusBackgroundListeners(): () => void {
         return;
       }
 
-      relayRollRequest(payload);
+      relayRollRequest(payload).catch((e) => {
+        const message = e instanceof Error ? e.message : "Internal relay failure";
+        const error: RollErrorMessage = {
+          rollId: payload.rollId,
+          error: message,
+          notation: payload.diceNotation,
+        };
+        OBR.broadcast.sendMessage(
+          rollErrorChannel(payload.source),
+          error,
+          { destination: "LOCAL" }
+        );
+      });
     }
   );
 
