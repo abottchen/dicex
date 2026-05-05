@@ -28,8 +28,8 @@ export function isModifierComponent(
 const VALID_SIDES = new Set([4, 6, 8, 10, 12, 20, 100]);
 const MAX_EXPLODING_DICE = 6;
 
-// Dice regex: count d sides [explode [>value | value]] [k|d count]
-const DICE_REGEX = /^(\d+)d(\d+)(!(?:>(\d+)|(\d+))?)?(?:(k|d)(\d+))?$/;
+// Dice regex: count d sides [explode [>value | value]] [(kh|kl|k|d) count]
+const DICE_REGEX = /^(\d+)d(\d+)(!(?:>(\d+)|(\d+))?)?(?:(kh|kl|k|d)(\d+))?$/;
 
 export function parseNotation(notation: string): NotationComponent[] {
   if (!notation || notation.trim() === "") {
@@ -122,15 +122,22 @@ export function parseNotation(notation: string): NotationComponent[] {
 
     if (keepDropChar !== undefined && keepDropVal !== undefined) {
       const n = parseInt(keepDropVal, 10);
-      if (keepDropChar === "k") {
+      if (keepDropChar === "k" || keepDropChar === "kh") {
         if (n > count) {
           throw new NotationError(
             `Keep count (${n}) cannot exceed dice count (${count}) in "${token}"`
           );
         }
         component.keep = n;
+      } else if (keepDropChar === "kl") {
+        if (n > count) {
+          throw new NotationError(
+            `Keep count (${n}) cannot exceed dice count (${count}) in "${token}"`
+          );
+        }
+        component.drop = count - n;
       } else {
-        // drop
+        // drop ("d")
         if (n >= count) {
           throw new NotationError(
             `Drop count (${n}) must be less than dice count (${count}) in "${token}"`

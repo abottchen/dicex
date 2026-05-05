@@ -160,4 +160,31 @@ describe("parseNotation", () => {
   it("rejects bare operator: -", () => {
     expect(() => parseNotation("-")).toThrow(NotationError);
   });
+
+  it("parses kh as keep highest: 4d6kh3", () => {
+    const result = parseNotation("4d6kh3");
+    expect(result).toEqual([{ count: 4, sides: 6, keep: 3 }]);
+  });
+
+  it("parses kl as keep lowest by mapping to drop: 4d6kl1", () => {
+    const result = parseNotation("4d6kl1");
+    // keep lowest 1 of 4 == drop highest 3
+    expect(result).toEqual([{ count: 4, sides: 6, drop: 3 }]);
+  });
+
+  it("rejects kh count exceeding dice count: 2d20kh3", () => {
+    expect(() => parseNotation("2d20kh3")).toThrow(NotationError);
+  });
+
+  it("rejects kl count exceeding dice count: 2d20kl3", () => {
+    expect(() => parseNotation("2d20kl3")).toThrow(NotationError);
+  });
+
+  it("parses kh combined with explode and modifier: 4d6!kh3+2", () => {
+    const result = parseNotation("4d6!kh3+2");
+    expect(result).toEqual([
+      { count: 4, sides: 6, explode: { type: "max" }, keep: 3 },
+      { modifier: 2 },
+    ]);
+  });
 });
