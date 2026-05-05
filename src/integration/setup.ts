@@ -30,6 +30,7 @@ export const obrCalls = {
     data: unknown;
     options?: { destination: "REMOTE" | "LOCAL" | "ALL" };
   }[],
+  actionOpenCount: 0,
 };
 
 export const obrConfig = {
@@ -43,7 +44,29 @@ export const obrConfig = {
   roomMetadata: {} as Record<string, unknown>,
   sceneMetadata: {} as Record<string, unknown>,
   sceneItems: [] as { id: string; name: string; layer: string; type: string }[],
+  actionIsOpen: false,
 };
+
+type BroadcastListener = (event: { data: unknown; connectionId: string }) => void;
+const broadcastListeners: Record<string, Set<BroadcastListener>> = {};
+
+export function simulateBroadcast(
+  channel: string,
+  data: unknown,
+  connectionId: string = "remote-conn"
+): void {
+  const listeners = broadcastListeners[channel];
+  if (!listeners) return;
+  for (const listener of listeners) {
+    listener({ data, connectionId });
+  }
+}
+
+export function clearBroadcastListeners(): void {
+  for (const key of Object.keys(broadcastListeners)) {
+    delete broadcastListeners[key];
+  }
+}
 
 function applyMetadataUpdate(target: Record<string, unknown>, data: Record<string, unknown>) {
   for (const [key, value] of Object.entries(data)) {
@@ -104,6 +127,24 @@ vi.mock("@owlbear-rodeo/sdk", () => ({
           return Promise.resolve();
         }
       ),
+      onMessage: vi.fn(
+        (channel: string, callback: BroadcastListener) => {
+          if (!broadcastListeners[channel]) {
+            broadcastListeners[channel] = new Set();
+          }
+          broadcastListeners[channel].add(callback);
+          return () => {
+            broadcastListeners[channel]?.delete(callback);
+          };
+        }
+      ),
+    },
+    action: {
+      open: vi.fn(() => {
+        obrCalls.actionOpenCount++;
+        return Promise.resolve();
+      }),
+      isOpen: vi.fn(() => Promise.resolve(obrConfig.actionIsOpen)),
     },
     isAvailable: false,
     onReady: vi.fn((cb: () => void) => cb()),
@@ -129,6 +170,7 @@ export function resetObrCalls() {
   obrCalls.roomSetMetadata.length = 0;
   obrCalls.sceneSetMetadata.length = 0;
   obrCalls.broadcast.length = 0;
+  obrCalls.actionOpenCount = 0;
   obrConfig.roomMetadata = {};
   obrConfig.sceneMetadata = {};
   obrConfig.sceneItems = [];
@@ -136,9 +178,11 @@ export function resetObrCalls() {
   obrConfig.playerName = "Gandalf";
   obrConfig.playerColor = "#ff0000";
   obrConfig.playerRole = "PLAYER";
+  obrConfig.actionIsOpen = false;
   obrConfig.partyPlayers = [
     { id: "gm-1", role: "GM", name: "DM", connectionId: "c1", metadata: {} },
   ];
+  clearBroadcastListeners();
 }
 
 // --- Roll Simulation ---
