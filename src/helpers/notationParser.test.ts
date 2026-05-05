@@ -166,10 +166,9 @@ describe("parseNotation", () => {
     expect(result).toEqual([{ count: 4, sides: 6, keep: 3 }]);
   });
 
-  it("parses kl as keep lowest by mapping to drop: 4d6kl1", () => {
+  it("parses kl as keep lowest: 4d6kl1", () => {
     const result = parseNotation("4d6kl1");
-    // keep lowest 1 of 4 == drop highest 3
-    expect(result).toEqual([{ count: 4, sides: 6, drop: 3 }]);
+    expect(result).toEqual([{ count: 4, sides: 6, keepLowest: 1 }]);
   });
 
   it("rejects kh count exceeding dice count: 2d20kh3", () => {

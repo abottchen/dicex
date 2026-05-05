@@ -51,7 +51,7 @@ export function buildDiceResults(input: BuildDiceResultsInput): ProcessedRollRes
     (c): c is DiceComponent => !isModifierComponent(c)
   ) ?? [];
   const hasAdvanced = diceComponents.some(
-    (c) => c.explode || c.keep !== undefined || c.drop !== undefined
+    (c) => c.explode || c.keep !== undefined || c.keepLowest !== undefined || c.drop !== undefined
   );
 
   if (hasAdvanced) {
@@ -128,9 +128,10 @@ function buildAdvancedResults(
     }
 
     // Apply keep/drop
-    if ((component.keep !== undefined || component.drop !== undefined) && groupDice.length > 0) {
+    if ((component.keep !== undefined || component.keepLowest !== undefined || component.drop !== undefined) && groupDice.length > 0) {
       applyKeepDrop(groupDice, {
         keep: component.keep,
+        keepLowest: component.keepLowest,
         drop: component.drop,
       });
     }

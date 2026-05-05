@@ -43,6 +43,20 @@ describe("applyKeepDrop", () => {
     expect(result.find((d) => d.value === 4)?.dropped).toBe(true);
     expect(result.find((d) => d.value === 15)?.dropped).toBeUndefined();
   });
+
+  it("keeps lowest 1 from 4d6 (drops the three highest)", () => {
+    const dice: DieResult[] = [
+      { type: "d6", value: 6 },
+      { type: "d6", value: 5 },
+      { type: "d6", value: 4 },
+      { type: "d6", value: 1 },
+    ];
+    const result = applyKeepDrop(dice, { keepLowest: 1 });
+    expect(result.find((d) => d.value === 1)?.dropped).toBeUndefined();
+    expect(result.find((d) => d.value === 4)?.dropped).toBe(true);
+    expect(result.find((d) => d.value === 5)?.dropped).toBe(true);
+    expect(result.find((d) => d.value === 6)?.dropped).toBe(true);
+  });
 });
 
 describe("applyKeepDrop (edge cases)", () => {

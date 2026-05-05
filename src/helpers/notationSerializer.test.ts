@@ -87,4 +87,14 @@ describe("serializeComponents", () => {
       expect(serializeComponents(parseNotation(notation))).toBe(notation);
     }
   });
+
+  it("serializes keepLowest to kl notation", () => {
+    expect(serializeComponents([{ count: 4, sides: 6, keepLowest: 1 }])).toBe(
+      "4d6kl1"
+    );
+  });
+
+  it("round-trips kl notation: parse → serialize", () => {
+    expect(serializeComponents(parseNotation("4d6kl1"))).toBe("4d6kl1");
+  });
 });
