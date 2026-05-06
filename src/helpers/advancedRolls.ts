@@ -2,22 +2,31 @@ import { DieResult, ModifierResult } from "../types/RollResult";
 
 export function applyKeepDrop(
   dice: DieResult[],
-  rules: { keep?: number; drop?: number }
+  rules: { keep?: number; keepLowest?: number; drop?: number }
 ): DieResult[] {
   const withEffective = dice.map((die, index) => ({
     index,
     effective: die.value,
   }));
-  const sorted = [...withEffective].sort((a, b) => a.effective - b.effective);
 
-  let dropCount = 0;
-  if (rules.keep !== undefined) {
-    dropCount = dice.length - rules.keep;
-  } else if (rules.drop !== undefined) {
-    dropCount = rules.drop;
+  let droppedIndices: Set<number>;
+  if (rules.keepLowest !== undefined) {
+    // Keep the N LOWEST → drop the (count - keepLowest) HIGHEST
+    const sortedDesc = [...withEffective].sort((a, b) => b.effective - a.effective);
+    const dropCount = dice.length - rules.keepLowest;
+    droppedIndices = new Set(sortedDesc.slice(0, dropCount).map((s) => s.index));
+  } else {
+    // keep / drop both drop from the LOW end
+    const sortedAsc = [...withEffective].sort((a, b) => a.effective - b.effective);
+    let dropCount = 0;
+    if (rules.keep !== undefined) {
+      dropCount = dice.length - rules.keep;
+    } else if (rules.drop !== undefined) {
+      dropCount = rules.drop;
+    }
+    droppedIndices = new Set(sortedAsc.slice(0, dropCount).map((s) => s.index));
   }
 
-  const droppedIndices = new Set(sorted.slice(0, dropCount).map((s) => s.index));
   for (let i = 0; i < dice.length; i++) {
     if (droppedIndices.has(i)) {
       dice[i].dropped = true;

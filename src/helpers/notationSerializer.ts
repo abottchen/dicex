@@ -79,6 +79,9 @@ export function serializeComponents(components: NotationComponent[]): string {
     if (dc.keep !== undefined) {
       part += `k${dc.keep}`;
     }
+    if (dc.keepLowest !== undefined) {
+      part += `kl${dc.keepLowest}`;
+    }
     if (dc.drop !== undefined) {
       part += `d${dc.drop}`;
     }
