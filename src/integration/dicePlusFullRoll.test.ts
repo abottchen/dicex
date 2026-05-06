@@ -43,7 +43,7 @@ describe("Dice+ full external roll integration", () => {
   it("inbound roll-request → action open → handshake → roll → roll-result", async () => {
     const payload: RollRequest = {
       rollId: "r-1",
-      playerId: "p-1",
+      playerId: "player-1",
       playerName: "Alice",
       rollTarget: "everyone",
       diceNotation: "2d6+3",
