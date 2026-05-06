@@ -5,7 +5,7 @@ import { mountDicePlusBackgroundListeners } from "./plugin/dicePlusBackgroundLis
 OBR.onReady(() => {
   OBR.popover.open({
     id: getPluginId("popover"),
-    url: "/popover.html",
+    url: `${import.meta.env.BASE_URL}popover.html`,
     width: 0,
     height: 0,
     anchorOrigin: { horizontal: "RIGHT", vertical: "BOTTOM" },
