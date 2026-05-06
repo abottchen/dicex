@@ -6,7 +6,6 @@ import {
   INTERNAL_READY_CHANNEL,
   INTERNAL_ROLL_CHANNEL,
   RollRequest,
-  rollTargetIsHidden,
 } from "./dicePlusProtocol";
 import { setPendingRollRequest } from "./dicePlusPendingRequest";
 
@@ -34,14 +33,12 @@ export function createDicePlusInternalRollHandler(): () => void {
       rollTarget: request.rollTarget,
     });
 
-    // Force the controls hidden flag based on rollTarget before rollFromNotation
-    // reads it. We do NOT toggle the user's persisted preference — rollFromNotation
-    // captures the current diceHidden from the controls state at call time.
+    // Temporary: force every Dice+ roll to hidden regardless of rollTarget.
+    // Upstream is sending rollTarget="everyone" for rolls that should be private,
+    // so until that's fixed we default Dice+ rolls to GM-only.
     const controls = useDiceControlsStore.getState();
-    const hidden = rollTargetIsHidden(request.rollTarget);
-    if (controls.diceHidden !== hidden) {
-      // Set directly on the store; toggle would flip from current.
-      useDiceControlsStore.setState({ diceHidden: hidden });
+    if (!controls.diceHidden) {
+      useDiceControlsStore.setState({ diceHidden: true });
     }
 
     rollFromNotation(request.diceNotation);
