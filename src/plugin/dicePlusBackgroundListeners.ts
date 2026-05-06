@@ -38,6 +38,11 @@ export function mountDicePlusBackgroundListeners(): () => void {
       if (!isRollRequest(event.data)) return;
       const payload = event.data;
 
+      // Only the addressed player should react. Without this gate every
+      // connected dicex client relays the roll into its own action sidebar,
+      // leaving stuck rolls on inactive tabs (rollValues frozen at null).
+      if (payload.playerId !== OBR.player.id) return;
+
       try {
         parseNotation(payload.diceNotation);
       } catch (e) {

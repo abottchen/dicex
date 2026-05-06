@@ -26,7 +26,7 @@ describe("Dice+ invalid notation", () => {
   it("emits {source}/roll-error and does not open the action", async () => {
     const payload: RollRequest = {
       rollId: "r-bad",
-      playerId: "p-1",
+      playerId: "player-1",
       playerName: "Alice",
       rollTarget: "everyone",
       diceNotation: "garbage",
