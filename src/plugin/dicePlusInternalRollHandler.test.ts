@@ -74,7 +74,7 @@ describe("dicePlusInternalRollHandler", () => {
     expect(rollState.roll).not.toBeNull();
   });
 
-  it("rollTarget=everyone produces a non-hidden roll", async () => {
+  it("rollTarget=everyone is forced hidden by the Dice+ override", async () => {
     simulateBroadcast(INTERNAL_ROLL_CHANNEL, {
       rollId: "r-2",
       playerId: "p-1",
@@ -87,7 +87,7 @@ describe("dicePlusInternalRollHandler", () => {
     });
     await flushPromises();
 
-    expect(useDiceControlsStore.getState().diceHidden).toBe(false);
+    expect(useDiceControlsStore.getState().diceHidden).toBe(true);
   });
 
   it("rollTarget=dm produces a hidden roll", async () => {
