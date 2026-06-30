@@ -4,11 +4,25 @@ import { Die } from "../types/Die";
 import { getDieFromDice } from "./getDieFromDice";
 import { getCombinedDiceValue } from "./getCombinedDiceValue";
 import { applyKeepDrop, calculateTotal } from "./advancedRolls";
-import { NotationComponent, DiceComponent, isModifierComponent } from "./notationParser";
+import { getDieValue } from "./getDieValue";
+import {
+  NotationComponent,
+  DiceComponent,
+  isModifierComponent,
+  hasAdvancedComponents,
+} from "./notationParser";
 
 export interface ProcessedRollResult {
   dice: (DieResult | ModifierResult)[];
   total: number;
+  /**
+   * Ids of the physical dice excluded by keep/drop rules. Used by the live
+   * breakdown UI to strike dropped dice while still drawing the real dice
+   * (which carry style/type). Empty for basic rolls. In-memory only — kept
+   * off the persisted `dice` array, which stays id-less. Typed as a plain
+   * array (not a Set) so the result stays JSON-clean next to wire/log data.
+   */
+  droppedIds: string[];
   advantage?: "adv" | "dis";
   notation?: string;
   presetName?: string;
@@ -46,13 +60,11 @@ export function buildDiceResults(input: BuildDiceResultsInput): ProcessedRollRes
 
   const bonus = roll.bonus ?? 0;
 
-  // Check if we have advanced notation components (explode/keep/drop)
+  // Check if we have advanced notation components (explode/keep/keepLowest/drop)
   const diceComponents = activeNotationComponents?.filter(
     (c): c is DiceComponent => !isModifierComponent(c)
   ) ?? [];
-  const hasAdvanced = diceComponents.some(
-    (c) => c.explode || c.keep !== undefined || c.keepLowest !== undefined || c.drop !== undefined
-  );
+  const hasAdvanced = hasAdvancedComponents(activeNotationComponents);
 
   if (hasAdvanced) {
     return buildAdvancedResults(allDice, rollValues, diceComponents, bonus, advantage, activeNotation, activePresetName);
@@ -70,6 +82,11 @@ function buildBasicResults(
   activeNotation?: string | null,
   activePresetName?: string | null,
 ): ProcessedRollResult {
+  // NB: per-die value is the raw rolled face — a d10 records 0 for a face of
+  // 10. We deliberately do NOT apply getDieValue here: a d10 can be the ones
+  // digit of a d100 percentile pair, where 0 genuinely means 0. The *total*
+  // below (getCombinedDiceValue) interprets faces correctly (10 for a standalone
+  // d10's 0; 0 for a percentile ones digit). See getDieValue / checkD100Combination.
   const diceResults: (DieResult | ModifierResult)[] = allDice.map((die) => ({
     type: die.type.toLowerCase(),
     value: rollValues[die.id],
@@ -84,6 +101,7 @@ function buildBasicResults(
   return {
     dice: diceResults,
     total: total ?? 0,
+    droppedIds: [],
     advantage,
     notation: activeNotation ?? undefined,
     presetName: activePresetName ?? undefined,
@@ -100,12 +118,25 @@ function buildAdvancedResults(
   activePresetName?: string | null,
 ): ProcessedRollResult {
   const diceResults: (DieResult | ModifierResult)[] = [];
+  const droppedIds: string[] = [];
 
+  // KNOWN LIMITATION: d100 + keep/drop/explode (e.g. "2d100kl1") is not
+  // supported here and produces incorrect results. A d100 roll is a nested
+  // {D100, D10} percentile pair, but this matcher keys purely on die type/order:
+  // it matches the D100 faces against the component and orphans the percentile
+  // D10s, so keep/drop selects on the tens-digit alone rather than the combined
+  // 1-100 value. Plain d100 rolls are unaffected (they go through
+  // getCombinedDiceValue.checkD100Combination, not this path). Fixing this needs
+  // percentile pairs combined before keep/drop is applied — tracked separately.
+  //
   // Map physical dice to their notation components by type and order
   // Each DiceComponent describes a group (e.g., 3d6! means 3 dice of d6 with explode)
   let diceIndex = 0;
   for (const component of diceComponents) {
     const groupDice: DieResult[] = [];
+    // Physical die backing each groupDice entry, kept parallel so a die marked
+    // dropped by applyKeepDrop can be traced back to its id.
+    const groupDie: Die[] = [];
     for (let i = 0; i < component.count && diceIndex < allDice.length; i++) {
       const die = allDice[diceIndex];
       // Skip dice that don't match the expected type (e.g., advantage doubles)
@@ -114,10 +145,11 @@ function buildAdvancedResults(
       if (die.type.toLowerCase() === `d${component.sides}`) {
         const result: DieResult = {
           type: die.type.toLowerCase(),
-          value: rollValues[die.id],
+          value: getDieValue(die.type, rollValues[die.id]),
         };
         if (die.isExplosion) result.isExplosion = true;
         groupDice.push(result);
+        groupDie.push(die);
         diceIndex++;
       } else {
         // Type mismatch — this die might belong to a different component or advantage structure
@@ -134,6 +166,10 @@ function buildAdvancedResults(
         keepLowest: component.keepLowest,
         drop: component.drop,
       });
+      // Project the single keep/drop decision onto the id-keyed view.
+      groupDice.forEach((d, i) => {
+        if (d.dropped) droppedIds.push(groupDie[i].id);
+      });
     }
 
     diceResults.push(...groupDice);
@@ -144,7 +180,7 @@ function buildAdvancedResults(
     const die = allDice[diceIndex];
     const result: DieResult = {
       type: die.type.toLowerCase(),
-      value: rollValues[die.id],
+      value: getDieValue(die.type, rollValues[die.id]),
     };
     if (die.isExplosion) result.isExplosion = true;
     diceResults.push(result);
@@ -160,6 +196,7 @@ function buildAdvancedResults(
   return {
     dice: diceResults,
     total,
+    droppedIds,
     advantage,
     notation: activeNotation ?? undefined,
     presetName: activePresetName ?? undefined,

@@ -26,6 +26,26 @@ export function isModifierComponent(
   return "modifier" in component;
 }
 
+/**
+ * Whether any parsed notation component uses an advanced roll mechanic
+ * (exploding, keep-highest, keep-lowest, or drop). This is the single source
+ * of truth used by both the rumble/log totals (buildDiceResults) and the
+ * in-tray total override, so the two can never disagree about, e.g., `2d20kl1`.
+ */
+export function hasAdvancedComponents(
+  components: NotationComponent[] | null | undefined
+): boolean {
+  if (!components) return false;
+  return components.some(
+    (c) =>
+      !isModifierComponent(c) &&
+      (c.explode ||
+        c.keep !== undefined ||
+        c.keepLowest !== undefined ||
+        c.drop !== undefined)
+  );
+}
+
 const VALID_SIDES = new Set([4, 6, 8, 10, 12, 20, 100]);
 const MAX_EXPLODING_DICE = 6;
 

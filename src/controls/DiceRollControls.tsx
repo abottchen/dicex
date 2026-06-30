@@ -21,7 +21,7 @@ import { PluginGate } from "../plugin/PluginGate";
 import { PresetSave } from "./PresetSave";
 import { serializeNotation, serializeComponents } from "../helpers/notationSerializer";
 import { buildDiceResults } from "../helpers/buildDiceResults";
-import { isModifierComponent } from "../helpers/notationParser";
+import { hasAdvancedComponents } from "../helpers/notationParser";
 import { useDiceRollStore } from "../dice/store";
 import { DiceResults } from "./DiceResults";
 import { getDiceToRoll, useDiceControlsStore } from "./store";
@@ -369,21 +369,21 @@ function FinishedRollControls() {
   const activeNotationComponents = useDiceControlsStore(
     (state) => state.activeNotationComponents
   );
-  const hasAdvanced = useMemo(() => {
-    if (!activeNotationComponents) return false;
-    return activeNotationComponents.some(
-      (c) => !isModifierComponent(c) && (c.explode || c.keep !== undefined || c.drop !== undefined)
-    );
-  }, [activeNotationComponents]);
+  const hasAdvanced = useMemo(
+    () => hasAdvancedComponents(activeNotationComponents),
+    [activeNotationComponents]
+  );
 
-  const advancedTotal = useMemo(() => {
+  // For advanced (keep/drop/explode) rolls, build the full result so the tray
+  // number AND the breakdown reflect dropped dice. Plain rolls pass null and
+  // DiceResults falls back to getCombinedDiceValue, as before.
+  const advancedResult = useMemo(() => {
     if (!hasAdvanced || !roll) return null;
-    const result = buildDiceResults({
+    return buildDiceResults({
       roll,
       rollValues: finishedRollValues,
       activeNotationComponents,
     });
-    return result.total;
   }, [hasAdvanced, roll, finishedRollValues, activeNotationComponents]);
 
   const [resultsExpanded, setResultsExpanded] = useState(false);
@@ -444,7 +444,7 @@ function FinishedRollControls() {
             rollValues={finishedRollValues}
             expanded={resultsExpanded}
             onExpand={setResultsExpanded}
-            overrideTotal={advancedTotal}
+            result={advancedResult}
           />
         )}
         {roll?.hidden && (

@@ -1,6 +1,7 @@
 import OBR from "@owlbear-rodeo/sdk";
 import { useEffect, useRef } from "react";
 import { useDiceRollStore } from "../dice/store";
+import { useDiceControlsStore } from "../controls/store";
 import { getDieFromDice } from "../helpers/getDieFromDice";
 import { getPluginId } from "./getPluginId";
 
@@ -40,11 +41,20 @@ export function DiceRollSync() {
           const transforms = state.roll?.hidden
             ? undefined
             : state.rollTransforms;
+          // Notation components carry advanced (keep/drop/explode) semantics that
+          // aren't encoded in the roll structure. Remote viewers need them to
+          // reproduce the same total/dropped result via buildDiceResults. Omit
+          // for hidden rolls (values are hidden anyway, and so the notation).
+          const notationComponents = state.roll?.hidden
+            ? undefined
+            : useDiceControlsStore.getState().activeNotationComponents ??
+              undefined;
           OBR.player.setMetadata({
             [getPluginId("roll")]: state.roll,
             [getPluginId("rollThrows")]: throws,
             [getPluginId("rollValues")]: values,
             [getPluginId("rollTransforms")]: transforms,
+            [getPluginId("rollNotationComponents")]: notationComponents,
           });
         }
       }),

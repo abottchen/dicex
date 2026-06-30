@@ -6,7 +6,8 @@ import { useDiceControlsStore } from "../controls/store";
 import { useDiceRollStore } from "../dice/store";
 import { createRumbleSyncSubscription } from "../plugin/rumbleSyncSubscription";
 import { createRollLoggerSubscription } from "../plugin/rollLoggerSubscription";
-import { parseNotation } from "../helpers/notationParser";
+import { parseNotation, hasAdvancedComponents } from "../helpers/notationParser";
+import { buildDiceResults } from "../helpers/buildDiceResults";
 import { DiceRoll } from "../types/DiceRoll";
 import { Die } from "../types/Die";
 import { DiceStyle } from "../types/DiceStyle";
@@ -114,6 +115,51 @@ describe("advanced roll integration", () => {
     ) as any;
     const entry = sceneData[logKey].rolls[0];
     expect(entry.total).toBe(12);
+  });
+
+  it("disadvantage 2d20kl1 reports the lowest die, not the sum", async () => {
+    const components = parseNotation("2d20kl1");
+    useDiceControlsStore.setState({
+      activeNotation: "2d20kl1",
+      activeNotationComponents: components,
+    });
+
+    const dice: Die[] = [
+      createTestDie("D20", "dis1"),
+      createTestDie("D20", "dis2"),
+    ];
+    const roll: DiceRoll = { dice };
+    useDiceRollStore.getState().startRoll(roll);
+
+    const ids = Object.keys(useDiceRollStore.getState().rollValues);
+    const values = [18, 5];
+    const dummyTransform = { position: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0, w: 1 } };
+    ids.forEach((id, i) => {
+      useDiceRollStore.getState().finishDieRoll(id, values[i], dummyTransform);
+    });
+
+    await flushPromises();
+
+    // Rumble message shows the lowest (5), not the sum (23)
+    const chat = latestChatPayload();
+    expect(chat.chatlog).toContain("for **5**!");
+    expect(chat.chatlog).not.toContain("for **23**!");
+
+    // The tray's top number is fed from this same computation: DiceRollControls
+    // passes the buildDiceResults(...) result into DiceResults whenever
+    // hasAdvancedComponents is true.
+    const finalValues = useDiceRollStore.getState().rollValues as Record<string, number>;
+    const finalRoll = useDiceRollStore.getState().roll!;
+    expect(hasAdvancedComponents(components)).toBe(true);
+    const result = buildDiceResults({
+      roll: finalRoll,
+      rollValues: finalValues,
+      activeNotationComponents: components,
+    });
+    expect(result.total).toBe(5);
+    const dropped = result.dice.filter((d: any) => d.dropped);
+    expect(dropped.length).toBe(1);
+    expect(dropped[0].value).toBe(18);
   });
 
   it("exploding 3d6! with physics-driven explosions", async () => {

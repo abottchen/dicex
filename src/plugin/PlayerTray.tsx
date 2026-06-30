@@ -95,7 +95,7 @@ export function PlayerTray({
 }
 
 function PlayerTrayResults({ player }: { player?: Player }) {
-  const { diceRoll, finalValue, finishedRollValues, finishedRolling } =
+  const { diceRoll, finalValue, result, finishedRollValues, finishedRolling } =
     usePlayerDice(player);
 
   const [resultsExpanded, setResultsExpanded] = useState(false);
@@ -141,6 +141,7 @@ function PlayerTrayResults({ player }: { player?: Player }) {
                       rollValues={finishedRollValues}
                       expanded={resultsExpanded}
                       onExpand={setResultsExpanded}
+                      result={result}
                     />
                   )}
               </Stack>

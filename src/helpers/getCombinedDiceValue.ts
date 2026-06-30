@@ -1,5 +1,6 @@
 import { Dice, isDice } from "../types/Dice";
 import { isDie } from "../types/Die";
+import { getDieValue } from "./getDieValue";
 
 /**
  * Check if the dice is a classical D100 roll with a D100
@@ -52,11 +53,7 @@ export function getCombinedDiceValue(
     if (isDie(dieOrDice)) {
       const value = values[dieOrDice.id];
       if (value !== undefined) {
-        if (value === 0 && dieOrDice.type === "D10") {
-          currentValues.push(10);
-        } else {
-          currentValues.push(value);
-        }
+        currentValues.push(getDieValue(dieOrDice.type, value));
       }
     } else if (isDice(dieOrDice)) {
       const value = getCombinedDiceValue(dieOrDice, values);

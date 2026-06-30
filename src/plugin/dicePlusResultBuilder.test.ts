@@ -12,6 +12,7 @@ describe("buildDicePlusResult", () => {
     const processed: ProcessedRollResult = {
       dice: [{ type: "d20", value: 12 }, { type: "mod", value: 5 }],
       total: 17,
+      droppedIds: [],
     };
     const result = buildDicePlusResult(processed, components);
 
@@ -43,6 +44,7 @@ describe("buildDicePlusResult", () => {
     const processed: ProcessedRollResult = {
       dice: [{ type: "d20", value: 8 }, { type: "mod", value: -2 }],
       total: 6,
+      droppedIds: [],
     };
     const result = buildDicePlusResult(processed, components);
 
@@ -66,6 +68,7 @@ describe("buildDicePlusResult", () => {
         { type: "d6", value: 1, dropped: true },
       ],
       total: 15,
+      droppedIds: [],
     };
     const result = buildDicePlusResult(processed, components);
 
@@ -92,6 +95,7 @@ describe("buildDicePlusResult", () => {
         { type: "d8", value: 7 },
       ],
       total: 15,
+      droppedIds: [],
     };
     const result = buildDicePlusResult(processed, components);
 
@@ -112,6 +116,7 @@ describe("buildDicePlusResult", () => {
         { type: "d6", value: 3, isExplosion: true },
       ],
       total: 13,
+      droppedIds: [],
     };
     const result = buildDicePlusResult(processed, components);
 
