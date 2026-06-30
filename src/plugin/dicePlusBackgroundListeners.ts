@@ -11,8 +11,33 @@ import {
 } from "./dicePlusProtocol";
 import { relayRollRequest } from "./dicePlusBackgroundCoordinator";
 
+// Diagnostic log for inspecting what external extensions broadcast on the
+// public roll-request channel. Each connected dicex client writes its own
+// last-N entries to its own player metadata so the GM can read everyone's
+// view via OBR.party.getPlayers(). Remove once Forge integration is stable.
+const DEBUG_LOG_KEY = "com.dicex/debug/last-roll-requests";
+const MAX_DEBUG_ENTRIES = 20;
+
+type DebugEntry = {
+  at: string;
+  connectionId: string;
+  localPlayerId: string;
+  data: unknown;
+  result: "relayed" | "ignored: invalid shape" | "ignored: not addressed";
+};
+
 /** Mount the background-side Dice+ listeners. Returns an unsubscribe. */
 export function mountDicePlusBackgroundListeners(): () => void {
+  const debugLog: DebugEntry[] = [];
+
+  const recordDebug = (entry: DebugEntry) => {
+    debugLog.unshift(entry);
+    if (debugLog.length > MAX_DEBUG_ENTRIES) {
+      debugLog.length = MAX_DEBUG_ENTRIES;
+    }
+    OBR.player.setMetadata({ [DEBUG_LOG_KEY]: debugLog });
+  };
+
   const unsubReady = OBR.broadcast.onMessage(
     DICE_PLUS_IS_READY_CHANNEL,
     (event) => {
@@ -35,13 +60,42 @@ export function mountDicePlusBackgroundListeners(): () => void {
   const unsubRoll = OBR.broadcast.onMessage(
     DICE_PLUS_ROLL_REQUEST_CHANNEL,
     (event) => {
-      if (!isRollRequest(event.data)) return;
+      const at = new Date().toISOString();
+      const localPlayerId = OBR.player.id;
+
+      if (!isRollRequest(event.data)) {
+        recordDebug({
+          at,
+          connectionId: event.connectionId,
+          localPlayerId,
+          data: event.data,
+          result: "ignored: invalid shape",
+        });
+        return;
+      }
       const payload = event.data;
 
       // Only the addressed player should react. Without this gate every
       // connected dicex client relays the roll into its own action sidebar,
       // leaving stuck rolls on inactive tabs (rollValues frozen at null).
-      if (payload.playerId !== OBR.player.id) return;
+      if (payload.playerId !== localPlayerId) {
+        recordDebug({
+          at,
+          connectionId: event.connectionId,
+          localPlayerId,
+          data: payload,
+          result: "ignored: not addressed",
+        });
+        return;
+      }
+
+      recordDebug({
+        at,
+        connectionId: event.connectionId,
+        localPlayerId,
+        data: payload,
+        result: "relayed",
+      });
 
       try {
         parseNotation(payload.diceNotation);

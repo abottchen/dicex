@@ -115,4 +115,67 @@ describe("Dice+ background listeners", () => {
       )
     ).toBe(false);
   });
+
+  it("writes a debug entry capturing payload, gate decision, and local player id for every roll-request received", async () => {
+    const DEBUG_KEY = "com.dicex/debug/last-roll-requests";
+
+    // 1) invalid shape
+    simulateBroadcast(DICE_PLUS_ROLL_REQUEST_CHANNEL, { junk: true }, "remote-1");
+    await flushPromises();
+
+    // 2) valid but addressed to another player
+    simulateBroadcast(
+      DICE_PLUS_ROLL_REQUEST_CHANNEL,
+      {
+        rollId: "r-other",
+        playerId: "someone-else",
+        playerName: "Bob",
+        rollTarget: "everyone",
+        diceNotation: "1d20",
+        showResults: true,
+        timestamp: 0,
+        source: "com.example.forge",
+      },
+      "remote-2"
+    );
+    await flushPromises();
+
+    // 3) valid and addressed to me
+    simulateBroadcast(
+      DICE_PLUS_ROLL_REQUEST_CHANNEL,
+      {
+        rollId: "r-mine",
+        playerId: "player-1",
+        playerName: "Gandalf",
+        rollTarget: "everyone",
+        diceNotation: "1d20",
+        showResults: true,
+        timestamp: 0,
+        source: "com.example.forge",
+      },
+      "remote-3"
+    );
+    await flushPromises();
+
+    const lastWrite = obrCalls.playerSetMetadata
+      .slice()
+      .reverse()
+      .find((m) => DEBUG_KEY in m);
+    expect(lastWrite).toBeDefined();
+
+    const log = (lastWrite as any)[DEBUG_KEY] as Array<Record<string, unknown>>;
+    expect(log.length).toBe(3);
+
+    // Newest first
+    expect(log[0].result).toBe("relayed");
+    expect((log[0].data as any).rollId).toBe("r-mine");
+    expect(log[0].localPlayerId).toBe("player-1");
+    expect(log[0].connectionId).toBe("remote-3");
+
+    expect(log[1].result).toBe("ignored: not addressed");
+    expect((log[1].data as any).rollId).toBe("r-other");
+
+    expect(log[2].result).toBe("ignored: invalid shape");
+    expect(log[2].data).toEqual({ junk: true });
+  });
 });
