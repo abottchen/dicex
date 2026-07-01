@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { parseNotation, NotationError, DiceComponent } from "./notationParser";
+import {
+  parseNotation,
+  NotationError,
+  DiceComponent,
+  hasAdvancedComponents,
+} from "./notationParser";
 
 describe("parseNotation", () => {
   it("parses basic dice: 2d6", () => {
@@ -185,5 +190,31 @@ describe("parseNotation", () => {
       { count: 4, sides: 6, explode: { type: "max" }, keep: 3 },
       { modifier: 2 },
     ]);
+  });
+});
+
+describe("hasAdvancedComponents", () => {
+  it("treats keepLowest (disadvantage, kl) as advanced: 2d20kl1", () => {
+    expect(hasAdvancedComponents(parseNotation("2d20kl1"))).toBe(true);
+  });
+
+  it("treats keep highest (kh) as advanced: 2d20kh1", () => {
+    expect(hasAdvancedComponents(parseNotation("2d20kh1"))).toBe(true);
+  });
+
+  it("treats drop (d) as advanced: 4d6d1", () => {
+    expect(hasAdvancedComponents(parseNotation("4d6d1"))).toBe(true);
+  });
+
+  it("treats explode (!) as advanced: 3d6!", () => {
+    expect(hasAdvancedComponents(parseNotation("3d6!"))).toBe(true);
+  });
+
+  it("does not treat a plain roll as advanced: 2d20", () => {
+    expect(hasAdvancedComponents(parseNotation("2d20"))).toBe(false);
+  });
+
+  it("does not treat a plain roll with a modifier as advanced: 2d6+3", () => {
+    expect(hasAdvancedComponents(parseNotation("2d6+3"))).toBe(false);
   });
 });

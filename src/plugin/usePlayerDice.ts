@@ -1,6 +1,10 @@
 import { Player } from "@owlbear-rodeo/sdk";
 import { useEffect, useMemo, useRef } from "react";
-import { getCombinedDiceValue } from "../helpers/getCombinedDiceValue";
+import {
+  buildDiceResults,
+  ProcessedRollResult,
+} from "../helpers/buildDiceResults";
+import { NotationComponent } from "../helpers/notationParser";
 import { DiceRoll } from "../types/DiceRoll";
 import { DiceThrow } from "../types/DiceThrow";
 import { DiceTransform } from "../types/DiceTransform";
@@ -26,6 +30,12 @@ export function usePlayerDice(player?: Player) {
   const rollTransforms = useMemo(() => {
     return player?.metadata[getPluginId("rollTransforms")] as
       | Record<string, DiceTransform | null>
+      | undefined;
+  }, [player]);
+
+  const rollNotationComponents = useMemo(() => {
+    return player?.metadata[getPluginId("rollNotationComponents")] as
+      | NotationComponent[]
       | undefined;
   }, [player]);
 
@@ -62,13 +72,22 @@ export function usePlayerDice(player?: Player) {
     return values;
   }, [rollValues]);
 
-  const finalValue = useMemo(() => {
+  // Reproduce the roller's result locally from synced inputs. buildDiceResults
+  // is the single result authority — its advanced path applies keep/drop/explode
+  // (needs the synced notation components), its basic path handles plain rolls,
+  // advantage/disadvantage, and D100 via getCombinedDiceValue.
+  const result = useMemo<ProcessedRollResult | null>(() => {
     if (diceRoll && finishedRollValues) {
-      return getCombinedDiceValue(diceRoll, finishedRollValues);
-    } else {
-      return null;
+      return buildDiceResults({
+        roll: diceRoll,
+        rollValues: finishedRollValues,
+        activeNotationComponents: rollNotationComponents,
+      });
     }
-  }, [diceRoll, finishedRollValues]);
+    return null;
+  }, [diceRoll, finishedRollValues, rollNotationComponents]);
+
+  const finalValue = result?.total ?? null;
 
   const finishedRolling = useMemo(() => {
     if (!rollValues) {
@@ -90,6 +109,7 @@ export function usePlayerDice(player?: Player) {
     transformsRef,
     finishedRollTransforms,
     finalValue,
+    result,
     finishedRollValues,
     finishedRolling,
   };

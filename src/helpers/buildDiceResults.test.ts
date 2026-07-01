@@ -3,7 +3,7 @@ import { buildDiceResults } from "./buildDiceResults";
 import { DiceRoll } from "../types/DiceRoll";
 import { Die } from "../types/Die";
 import { Dice } from "../types/Dice";
-import { NotationComponent } from "./notationParser";
+import { NotationComponent, parseNotation } from "./notationParser";
 
 function makeDie(id: string, type: string = "D6"): Die {
   return { id, style: "GALAXY" as any, type: type as any };
@@ -105,6 +105,20 @@ describe("buildDiceResults", () => {
     expect(result.total).toBe(9);
   });
 
+  it("keeps a d100 percentile pair's d10 ones-digit raw (1d100=70, not 80)", () => {
+    // A d100 roll is a nested {D100, D10} pair; the D10 is the ones digit, where
+    // a face of 0 means 0 (NOT 10). buildBasicResults must not normalize it.
+    const d100 = makeDie("hundreds", "D100");
+    const d10 = makeDie("ones", "D10");
+    const roll: DiceRoll = { dice: [{ dice: [d100, d10] }] };
+
+    const result = buildDiceResults({ roll, rollValues: { hundreds: 70, ones: 0 } });
+
+    expect(result.total).toBe(70);
+    const ones = result.dice.find((d) => d.type === "d10");
+    expect(ones).toEqual({ type: "d10", value: 0 });
+  });
+
   it("uses advanced path (calculateTotal) when notation components are present with keep", () => {
     const die1 = makeDie("die-1");
     const die2 = makeDie("die-2");
@@ -185,5 +199,105 @@ describe("buildDiceResults", () => {
 
     // Total should be 6 + 4 = 10 — no silent explosions generated
     expect(result.total).toBe(10);
+  });
+});
+
+describe("buildDiceResults droppedIds", () => {
+  it("reports the id of the die dropped by keep-highest (4d6k3)", () => {
+    const dice = [
+      makeDie("a"), makeDie("b"), makeDie("c"), makeDie("d"),
+    ];
+    const roll: DiceRoll = { dice };
+    const result = buildDiceResults({
+      roll,
+      rollValues: { a: 5, b: 2, c: 4, d: 6 }, // lowest is b
+      activeNotationComponents: parseNotation("4d6k3"),
+    });
+
+    expect(result.total).toBe(15); // 5 + 4 + 6
+    expect(result.droppedIds).toEqual(["b"]);
+  });
+
+  it("reports the id of the die dropped by disadvantage (2d20kl1)", () => {
+    const dice = [makeDie("hi", "D20"), makeDie("lo", "D20")];
+    const roll: DiceRoll = { dice };
+    const result = buildDiceResults({
+      roll,
+      rollValues: { hi: 18, lo: 5 },
+      activeNotationComponents: parseNotation("2d20kl1"),
+    });
+
+    expect(result.total).toBe(5);
+    expect(result.droppedIds).toEqual(["hi"]);
+  });
+
+  it("returns an empty droppedIds for a plain roll (2d6)", () => {
+    const roll: DiceRoll = { dice: [makeDie("a"), makeDie("b")] };
+    const result = buildDiceResults({
+      roll,
+      rollValues: { a: 3, b: 4 },
+      activeNotationComponents: parseNotation("2d6"),
+    });
+
+    expect(result.total).toBe(7);
+    expect(result.droppedIds).toEqual([]);
+  });
+
+  it("returns an empty droppedIds for explode without keep (3d6!)", () => {
+    const roll: DiceRoll = { dice: [makeDie("a"), makeDie("b"), makeDie("c")] };
+    const result = buildDiceResults({
+      roll,
+      rollValues: { a: 6, b: 3, c: 2 },
+      activeNotationComponents: parseNotation("3d6!"),
+    });
+
+    expect(result.droppedIds).toEqual([]);
+  });
+
+  it("treats a d10 face-0 as 10 when dropping the highest (2d10kl1)", () => {
+    const roll: DiceRoll = { dice: [makeDie("zero", "D10"), makeDie("seven", "D10")] };
+    const result = buildDiceResults({
+      roll,
+      rollValues: { zero: 0, seven: 7 }, // a 0-face d10 means 10
+      activeNotationComponents: parseNotation("2d10kl1"),
+    });
+
+    // Disadvantage keeps the lower face: 7, dropping the 0 (=10)
+    expect(result.total).toBe(7);
+    expect(result.droppedIds).toEqual(["zero"]);
+  });
+
+  it("treats a d10 face-0 as 10 when keeping the highest (2d10kh1)", () => {
+    const roll: DiceRoll = { dice: [makeDie("zero", "D10"), makeDie("seven", "D10")] };
+    const result = buildDiceResults({
+      roll,
+      rollValues: { zero: 0, seven: 7 },
+      activeNotationComponents: parseNotation("2d10kh1"),
+    });
+
+    // Advantage keeps the higher face: the 0 (=10), dropping the 7
+    expect(result.total).toBe(10);
+    expect(result.droppedIds).toEqual(["seven"]);
+  });
+
+  it("never marks physics-driven explosion dice as dropped (3d6!kh2)", () => {
+    // 3 base d6 + 1 explosion die; kh2 drops one BASE die, never the explosion
+    const roll: DiceRoll = {
+      dice: [
+        makeDie("base1"), makeDie("base2"), makeDie("base3"),
+        { id: "exp1", style: "IRON" as any, type: "D6" as any, isExplosion: true },
+      ],
+    };
+    const result = buildDiceResults({
+      roll,
+      rollValues: { base1: 6, base2: 1, base3: 4, exp1: 5 },
+      activeNotationComponents: parseNotation("3d6!kh2"),
+    });
+
+    // Lowest base die (base2 = 1) dropped; explosion never dropped
+    expect(result.droppedIds).toEqual(["base2"]);
+    expect(result.droppedIds).not.toContain("exp1");
+    // Total keeps the two highest base dice (6, 4) plus the explosion (5)
+    expect(result.total).toBe(15);
   });
 });
