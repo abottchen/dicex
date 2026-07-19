@@ -17,6 +17,7 @@ import {
   INTERNAL_PING_CHANNEL,
   INTERNAL_READY_CHANNEL,
   INTERNAL_ROLL_CHANNEL,
+  TRUSTED_ROLL_TARGET_SOURCES,
 } from "./dicePlusProtocol";
 
 describe("dicePlusInternalRollHandler", () => {
@@ -66,15 +67,14 @@ describe("dicePlusInternalRollHandler", () => {
       source: "com.example.forge",
     });
 
-    const controls = useDiceControlsStore.getState();
-    expect(controls.diceHidden).toBe(true);
-    expect(controls.activeNotation).toBe("1d20+3");
+    expect(useDiceControlsStore.getState().activeNotation).toBe("1d20+3");
 
     const rollState = useDiceRollStore.getState();
     expect(rollState.roll).not.toBeNull();
+    expect(rollState.roll?.hidden).toBe(true);
   });
 
-  it("rollTarget=everyone is forced hidden by the Dice+ override", async () => {
+  it("hides rollTarget=everyone from an untrusted source", async () => {
     simulateBroadcast(INTERNAL_ROLL_CHANNEL, {
       rollId: "r-2",
       playerId: "p-1",
@@ -87,7 +87,23 @@ describe("dicePlusInternalRollHandler", () => {
     });
     await flushPromises();
 
-    expect(useDiceControlsStore.getState().diceHidden).toBe(true);
+    expect(useDiceRollStore.getState().roll?.hidden).toBe(true);
+  });
+
+  it("honors rollTarget=everyone from a trusted source", async () => {
+    simulateBroadcast(INTERNAL_ROLL_CHANNEL, {
+      rollId: "r-5",
+      playerId: "p-1",
+      playerName: "Alice",
+      rollTarget: "everyone",
+      diceNotation: "1d20",
+      showResults: true,
+      timestamp: 0,
+      source: TRUSTED_ROLL_TARGET_SOURCES[0],
+    });
+    await flushPromises();
+
+    expect(useDiceRollStore.getState().roll?.hidden).toBe(false);
   });
 
   it("rollTarget=dm produces a hidden roll", async () => {
@@ -103,7 +119,7 @@ describe("dicePlusInternalRollHandler", () => {
     });
     await flushPromises();
 
-    expect(useDiceControlsStore.getState().diceHidden).toBe(true);
+    expect(useDiceRollStore.getState().roll?.hidden).toBe(true);
   });
 
   it("rollTarget=gm_only produces a hidden roll", async () => {
@@ -119,6 +135,44 @@ describe("dicePlusInternalRollHandler", () => {
     });
     await flushPromises();
 
+    expect(useDiceRollStore.getState().roll?.hidden).toBe(true);
+  });
+
+  it("leaves the user's hidden toggle untouched", async () => {
+    useDiceControlsStore.setState({ diceHidden: false });
+
+    simulateBroadcast(INTERNAL_ROLL_CHANNEL, {
+      rollId: "r-6",
+      playerId: "p-1",
+      playerName: "Alice",
+      rollTarget: "gm_only",
+      diceNotation: "1d6",
+      showResults: true,
+      timestamp: 0,
+      source: "com.example.forge",
+    });
+    await flushPromises();
+
+    expect(useDiceRollStore.getState().roll?.hidden).toBe(true);
+    expect(useDiceControlsStore.getState().diceHidden).toBe(false);
+  });
+
+  it("does not make a GM's hidden toggle public via a trusted roll", async () => {
+    useDiceControlsStore.setState({ diceHidden: true });
+
+    simulateBroadcast(INTERNAL_ROLL_CHANNEL, {
+      rollId: "r-7",
+      playerId: "p-1",
+      playerName: "Alice",
+      rollTarget: "everyone",
+      diceNotation: "1d20",
+      showResults: true,
+      timestamp: 0,
+      source: TRUSTED_ROLL_TARGET_SOURCES[0],
+    });
+    await flushPromises();
+
+    expect(useDiceRollStore.getState().roll?.hidden).toBe(false);
     expect(useDiceControlsStore.getState().diceHidden).toBe(true);
   });
 });

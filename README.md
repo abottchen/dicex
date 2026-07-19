@@ -34,6 +34,24 @@ Every roll is recorded with timestamp, notation, individual die results, total, 
 
 A visibility toggle that defaults to hidden for GMs and visible for players. Hidden rolls are excluded from the public Rumble chat feed and only sent to the roller and GM.
 
+### Dice+ Integration
+
+Other Owlbear Rodeo extensions can ask dicex to roll on their behalf, using the Dice+ broadcast protocol. A request is sent on `dice-plus/roll-request` with `{ destination: "LOCAL" }`; the result comes back on `{source}/roll-result`, or an error on `{source}/roll-error`. The authoritative payload types are exported from `src/plugin/dicePlusProtocol.ts`.
+
+**Roll visibility is source-gated.** A request carries a `rollTarget`, but `"everyone"` produces a visible roll *only* when the requesting extension's `source` id is listed in `TRUSTED_ROLL_TARGET_SOURCES`. Every other combination is hidden:
+
+| `rollTarget` | Trusted source | Any other source |
+|---|---|---|
+| `everyone` | visible | hidden |
+| `self` / `dm` / `gm_only` | hidden | hidden |
+
+This is an allowlist because the failure modes aren't symmetric — a roll wrongly made public can't be taken back, while one wrongly hidden is a minor annoyance. An unrecognized source is therefore always hidden.
+
+Two consequences worth knowing before integrating:
+
+- **`everyone` fails silently if you aren't listed.** The roll succeeds and reports back normally; it's just hidden. There's no error. If your integration's rolls are unexpectedly private, this is why — open an issue to have your extension's id added.
+- **Dice+ rolls never alter the user's tray toggle.** Visibility is passed per-roll, so a request cannot leave the user's own hidden setting changed.
+
 ## Installing
 
 Add the extension to Owlbear Rodeo using this manifest URL:

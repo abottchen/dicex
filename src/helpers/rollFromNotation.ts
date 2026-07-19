@@ -5,8 +5,14 @@ import { resolveNotationAgainstSet } from "./resolveNotationAgainstSet";
 /**
  * Resolve a notation string against the current dice set, wipe any tray
  * state, and start a roll. Returns true iff a roll was started.
+ *
+ * `hidden` overrides the tray's hidden toggle for this roll only, without
+ * modifying it; callers that omit it inherit the user's current setting.
  */
-export function rollFromNotation(notation: string): boolean {
+export function rollFromNotation(
+  notation: string,
+  options?: { hidden?: boolean }
+): boolean {
   let resolved;
   try {
     const controls = useDiceControlsStore.getState();
@@ -33,6 +39,6 @@ export function rollFromNotation(notation: string): boolean {
 
   useDiceRollStore
     .getState()
-    .startRoll({ dice, bonus, hidden: controls.diceHidden }, 1);
+    .startRoll({ dice, bonus, hidden: options?.hidden ?? controls.diceHidden }, 1);
   return true;
 }
