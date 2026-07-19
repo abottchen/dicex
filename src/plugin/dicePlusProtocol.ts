@@ -75,9 +75,25 @@ export interface RollErrorMessage {
   notation: string;
 }
 
-/** Map a Dice+ rollTarget onto dicex's hidden flag. */
-export function rollTargetIsHidden(target: RollTarget): boolean {
-  return target !== "everyone";
+/**
+ * Sources whose `rollTarget: "everyone"` we take at face value.
+ *
+ * Allowlist rather than denylist, because the failure modes are asymmetric: a
+ * roll wrongly made public cannot be taken back, while one wrongly hidden is a
+ * minor annoyance. Third-party Dice+ sends "everyone" for rolls that should be
+ * private, so an unrecognized source is always hidden.
+ */
+export const TRUSTED_ROLL_TARGET_SOURCES: readonly string[] = [
+  "com.abottchen.obr-forge-helper",
+];
+
+/**
+ * Map a Dice+ request onto dicex's hidden flag. Only "everyone", and only from
+ * a trusted source, produces a visible roll.
+ */
+export function resolveHidden(source: string, target: RollTarget): boolean {
+  if (target !== "everyone") return true;
+  return !TRUSTED_ROLL_TARGET_SOURCES.includes(source);
 }
 
 export function isRollRequest(data: unknown): data is RollRequest {

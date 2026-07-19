@@ -1,10 +1,10 @@
 import OBR from "@owlbear-rodeo/sdk";
 import { rollFromNotation } from "../helpers/rollFromNotation";
-import { useDiceControlsStore } from "../controls/store";
 import {
   INTERNAL_PING_CHANNEL,
   INTERNAL_READY_CHANNEL,
   INTERNAL_ROLL_CHANNEL,
+  resolveHidden,
   RollRequest,
 } from "./dicePlusProtocol";
 import { setPendingRollRequest } from "./dicePlusPendingRequest";
@@ -33,15 +33,11 @@ export function createDicePlusInternalRollHandler(): () => void {
       rollTarget: request.rollTarget,
     });
 
-    // Temporary: force every Dice+ roll to hidden regardless of rollTarget.
-    // Upstream is sending rollTarget="everyone" for rolls that should be private,
-    // so until that's fixed we default Dice+ rolls to GM-only.
-    const controls = useDiceControlsStore.getState();
-    if (!controls.diceHidden) {
-      useDiceControlsStore.setState({ diceHidden: true });
-    }
-
-    rollFromNotation(request.diceNotation);
+    // Pass hidden per-roll rather than through the control store: the tray's
+    // toggle belongs to the user, and a Dice+ roll must not leave it changed.
+    rollFromNotation(request.diceNotation, {
+      hidden: resolveHidden(request.source, request.rollTarget),
+    });
   });
 
   return () => {
