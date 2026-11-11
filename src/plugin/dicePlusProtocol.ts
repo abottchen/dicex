@@ -1,3 +1,5 @@
+import { HiddenAudience } from "../types/DiceRoll";
+
 /** Dice+ broadcast channel constants and payload types.
  *  Reference: docs/superpowers/specs/2026-05-05-dice-plus-protocol-design.md
  */
@@ -76,24 +78,26 @@ export interface RollErrorMessage {
 }
 
 /**
- * Sources whose `rollTarget: "everyone"` we take at face value.
- *
- * Allowlist rather than denylist, because the failure modes are asymmetric: a
- * roll wrongly made public cannot be taken back, while one wrongly hidden is a
- * minor annoyance. Third-party Dice+ sends "everyone" for rolls that should be
- * private, so an unrecognized source is always hidden.
+ * Map a Dice+ request onto dicex's hidden flag. The caller states the
+ * visibility: "everyone" is a public roll, every other target is hidden.
  */
-export const TRUSTED_ROLL_TARGET_SOURCES: readonly string[] = [
-  "com.abottchen.obr-forge-helper",
-];
+export function resolveHidden(target: RollTarget): boolean {
+  return target !== "everyone";
+}
 
-/**
- * Map a Dice+ request onto dicex's hidden flag. Only "everyone", and only from
- * a trusted source, produces a visible roll.
- */
-export function resolveHidden(source: string, target: RollTarget): boolean {
-  if (target !== "everyone") return true;
-  return !TRUSTED_ROLL_TARGET_SOURCES.includes(source);
+/** Narrow a hidden Dice+ roll to its audience. "everyone" is never hidden. */
+export function resolveHiddenAudience(
+  target: RollTarget
+): HiddenAudience | undefined {
+  switch (target) {
+    case "self":
+      return "self";
+    case "dm":
+    case "gm_only":
+      return "gm";
+    case "everyone":
+      return undefined;
+  }
 }
 
 export function isRollRequest(data: unknown): data is RollRequest {

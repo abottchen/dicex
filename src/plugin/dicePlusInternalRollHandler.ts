@@ -5,6 +5,7 @@ import {
   INTERNAL_READY_CHANNEL,
   INTERNAL_ROLL_CHANNEL,
   resolveHidden,
+  resolveHiddenAudience,
   RollRequest,
 } from "./dicePlusProtocol";
 import { setPendingRollRequest } from "./dicePlusPendingRequest";
@@ -36,7 +37,8 @@ export function createDicePlusInternalRollHandler(): () => void {
     // Pass hidden per-roll rather than through the control store: the tray's
     // toggle belongs to the user, and a Dice+ roll must not leave it changed.
     rollFromNotation(request.diceNotation, {
-      hidden: resolveHidden(request.source, request.rollTarget),
+      hidden: resolveHidden(request.rollTarget),
+      hiddenAudience: resolveHiddenAudience(request.rollTarget),
     });
   });
 
