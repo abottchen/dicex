@@ -4,6 +4,7 @@ import {
   resetObrCalls,
   simulateBroadcast,
   flushPromises,
+  allowDicePlusSource,
 } from "../integration/setup";
 import { mountDicePlusBackgroundListeners } from "./dicePlusBackgroundListeners";
 import {
@@ -17,6 +18,7 @@ describe("Dice+ background listeners", () => {
 
   beforeEach(() => {
     resetObrCalls();
+    allowDicePlusSource("com.example.forge");
     unsubscribe = mountDicePlusBackgroundListeners();
   });
 
@@ -65,7 +67,8 @@ describe("Dice+ background listeners", () => {
     expect(obrCalls.actionOpenCount).toBe(0);
   });
 
-  it("on valid notation, opens the action and pings", async () => {
+  it("on valid notation, relays to a ready popover without opening the action", async () => {
+    // #given
     const payload: RollRequest = {
       rollId: "roll-good",
       playerId: "player-1",
@@ -76,17 +79,24 @@ describe("Dice+ background listeners", () => {
       timestamp: 0,
       source: "com.example.forge",
     };
+    // #when
     simulateBroadcast(DICE_PLUS_ROLL_REQUEST_CHANNEL, payload);
-    // Allow the async relay to begin (open + ping).
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
+    await flushPromises();
 
-    expect(obrCalls.actionOpenCount).toBe(1);
     const ping = obrCalls.broadcast.find(
-      (b) => b.channel === "rodeo.owlbear.dice/internal-ping"
+      (b) => b.channel === "rodeo.owlbear.dice/popover-ping"
     );
     expect(ping).toBeDefined();
+    simulateBroadcast("rodeo.owlbear.dice/popover-ready", ping!.data);
+    await flushPromises();
+
+    // #then
+    expect([
+      obrCalls.actionOpenCount,
+      obrCalls.broadcast.find(
+        (b) => b.channel === "rodeo.owlbear.dice/popover-roll"
+      )?.data,
+    ]).toEqual([0, payload]);
   });
 
   it("ignores roll requests addressed to a different player", async () => {

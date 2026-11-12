@@ -1,13 +1,38 @@
+import { HiddenAudience } from "../types/DiceRoll";
+
 /** Dice+ broadcast channel constants and payload types.
  *  Reference: docs/superpowers/specs/2026-05-05-dice-plus-protocol-design.md
  */
 
 export const DICE_PLUS_IS_READY_CHANNEL = "dice-plus/isReady";
 export const DICE_PLUS_ROLL_REQUEST_CHANNEL = "dice-plus/roll-request";
+export const DICE_PLUS_REQUEST_ACCESS_CHANNEL = "dice-plus/request-access";
+
+/**
+ * How long a roll request from a source without the GM's answer waits for
+ * one, and how long a request-access call reports on the outcome.
+ */
+export const ACCESS_DECISION_TIMEOUT_MS = 25_000;
+
+/** `error` of a roll-error when the GM has not allowed the source. */
+export const ROLL_ERROR_NOT_PERMITTED = "not-permitted";
+/** `error` of a roll-error when no GM is in the room to allow the source. */
+export const ROLL_ERROR_NO_GM = "no-gm";
 
 export const INTERNAL_PING_CHANNEL = "rodeo.owlbear.dice/internal-ping";
 export const INTERNAL_READY_CHANNEL = "rodeo.owlbear.dice/internal-ready";
 export const INTERNAL_ROLL_CHANNEL = "rodeo.owlbear.dice/internal-roll";
+
+export const POPOVER_PING_CHANNEL = "rodeo.owlbear.dice/popover-ping";
+export const POPOVER_READY_CHANNEL = "rodeo.owlbear.dice/popover-ready";
+export const POPOVER_ROLL_CHANNEL = "rodeo.owlbear.dice/popover-roll";
+export const DICE_PLUS_FEATURE_ROLL_IN = "rollIn";
+
+export interface DicePlusRollChannels {
+  ping: string;
+  ready: string;
+  roll: string;
+}
 
 export function rollResultChannel(source: string): string {
   return `${source}/roll-result`;
@@ -17,17 +42,45 @@ export function rollErrorChannel(source: string): string {
   return `${source}/roll-error`;
 }
 
+export function accessChannel(source: string): string {
+  return `${source}/access`;
+}
+
 export type RollTarget = "everyone" | "self" | "dm" | "gm_only";
 
 export interface IsReadyRequest {
   requestId: string;
   timestamp: number;
+  /** Requester's extension id. When present, the reply carries `permitted`. */
+  source?: string;
 }
 
 export interface IsReadyResponse {
   requestId: string;
   ready: true;
   timestamp: number;
+  /** Capabilities supported by this Dice+ implementation. */
+  features?: string[];
+  /** Whether the GM allowed `source` to roll in this room. Only when the request named a source. */
+  permitted?: boolean;
+}
+
+export interface AccessRequest {
+  requestId: string;
+  source: string;
+}
+
+/**
+ * - "allowed" / "denied": the GM's stored answer for this room.
+ * - "pending": a GM was asked; a second reply with the outcome follows.
+ * - "no-gm": no GM is in the room, so nobody can allow the source.
+ * - "timeout": no GM answered within ACCESS_DECISION_TIMEOUT_MS.
+ */
+export type AccessStatus = "allowed" | "denied" | "pending" | "no-gm" | "timeout";
+
+export interface AccessResponse {
+  requestId: string;
+  status: AccessStatus;
 }
 
 export interface RollRequest {
@@ -40,6 +93,15 @@ export interface RollRequest {
   timestamp: number;
   /** Requester's extension id; used as the prefix for response channels. */
   source: string;
+  /** Where dicex should run the roll; unknown wire values are treated as `auto`. */
+  rollIn?: RollIn;
+}
+
+export type RollIn = "auto" | "window" | "tray";
+
+export function resolveRollIn(value: unknown): RollIn {
+  if (value === "window" || value === "tray") return value;
+  return "auto";
 }
 
 export interface DicePlusDie {
@@ -76,24 +138,26 @@ export interface RollErrorMessage {
 }
 
 /**
- * Sources whose `rollTarget: "everyone"` we take at face value.
- *
- * Allowlist rather than denylist, because the failure modes are asymmetric: a
- * roll wrongly made public cannot be taken back, while one wrongly hidden is a
- * minor annoyance. Third-party Dice+ sends "everyone" for rolls that should be
- * private, so an unrecognized source is always hidden.
+ * Map a Dice+ request onto dicex's hidden flag. The caller states the
+ * visibility: "everyone" is a public roll, every other target is hidden.
  */
-export const TRUSTED_ROLL_TARGET_SOURCES: readonly string[] = [
-  "com.abottchen.obr-forge-helper",
-];
+export function resolveHidden(target: RollTarget): boolean {
+  return target !== "everyone";
+}
 
-/**
- * Map a Dice+ request onto dicex's hidden flag. Only "everyone", and only from
- * a trusted source, produces a visible roll.
- */
-export function resolveHidden(source: string, target: RollTarget): boolean {
-  if (target !== "everyone") return true;
-  return !TRUSTED_ROLL_TARGET_SOURCES.includes(source);
+/** Narrow a hidden Dice+ roll to its audience. "everyone" is never hidden. */
+export function resolveHiddenAudience(
+  target: RollTarget
+): HiddenAudience | undefined {
+  switch (target) {
+    case "self":
+      return "self";
+    case "dm":
+    case "gm_only":
+      return "gm";
+    case "everyone":
+      return undefined;
+  }
 }
 
 export function isRollRequest(data: unknown): data is RollRequest {
@@ -110,6 +174,12 @@ export function isRollRequest(data: unknown): data is RollRequest {
       d.rollTarget === "dm" ||
       d.rollTarget === "gm_only")
   );
+}
+
+export function isAccessRequest(data: unknown): data is AccessRequest {
+  if (typeof data !== "object" || data === null) return false;
+  const d = data as Record<string, unknown>;
+  return typeof d.requestId === "string" && typeof d.source === "string";
 }
 
 export function isIsReadyRequest(data: unknown): data is IsReadyRequest {

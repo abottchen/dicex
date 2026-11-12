@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   obrCalls,
+  obrConfig,
   resetStores,
   resetObrCalls,
   simulateBroadcast,
   flushPromises,
+  allowDicePlusSource,
 } from "./setup";
 import { mountDicePlusBackgroundListeners } from "../plugin/dicePlusBackgroundListeners";
 import { createDicePlusInternalRollHandler } from "../plugin/dicePlusInternalRollHandler";
@@ -27,6 +29,8 @@ describe("Dice+ full external roll integration", () => {
   beforeEach(() => {
     resetStores();
     resetObrCalls();
+    obrConfig.actionIsOpen = true;
+    allowDicePlusSource("com.example.forge");
     clearPendingRollRequest();
     unsubBg = mountDicePlusBackgroundListeners();
     unsubInternal = createDicePlusInternalRollHandler();

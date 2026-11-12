@@ -3,35 +3,38 @@ import {
   isRollRequest,
   isIsReadyRequest,
   resolveHidden,
-  TRUSTED_ROLL_TARGET_SOURCES,
+  resolveHiddenAudience,
 } from "./dicePlusProtocol";
 
 describe("resolveHidden", () => {
-  const trusted = "com.abottchen.obr-forge-helper";
-  const untrusted = "com.example.unknown";
-
-  it("trusts obr-forge-helper by default", () => {
-    expect(TRUSTED_ROLL_TARGET_SOURCES).toContain(trusted);
+  it("shows rollTarget=everyone", () => {
+    expect(resolveHidden("everyone")).toBe(false);
   });
 
-  it("honors rollTarget=everyone from a trusted source", () => {
-    expect(resolveHidden(trusted, "everyone")).toBe(false);
+  it("hides the private targets", () => {
+    expect([
+      resolveHidden("self"),
+      resolveHidden("dm"),
+      resolveHidden("gm_only"),
+    ]).toEqual([true, true, true]);
+  });
+});
+
+describe("resolveHiddenAudience", () => {
+  it("keeps a self roll to the roller", () => {
+    expect(resolveHiddenAudience("self")).toBe("self");
   });
 
-  it("hides rollTarget=everyone from an untrusted source", () => {
-    expect(resolveHidden(untrusted, "everyone")).toBe(true);
+  it("shows a dm roll to the GM", () => {
+    expect(resolveHiddenAudience("dm")).toBe("gm");
   });
 
-  it("hides private targets even from a trusted source", () => {
-    expect(resolveHidden(trusted, "self")).toBe(true);
-    expect(resolveHidden(trusted, "dm")).toBe(true);
-    expect(resolveHidden(trusted, "gm_only")).toBe(true);
+  it("shows a gm_only roll to the GM", () => {
+    expect(resolveHiddenAudience("gm_only")).toBe("gm");
   });
 
-  it("hides private targets from an untrusted source", () => {
-    expect(resolveHidden(untrusted, "self")).toBe(true);
-    expect(resolveHidden(untrusted, "dm")).toBe(true);
-    expect(resolveHidden(untrusted, "gm_only")).toBe(true);
+  it("gives everyone no audience", () => {
+    expect(resolveHiddenAudience("everyone")).toBeUndefined();
   });
 });
 
@@ -72,6 +75,13 @@ describe("isRollRequest", () => {
     for (const target of ["everyone", "self", "dm", "gm_only"]) {
       expect(isRollRequest({ ...valid, rollTarget: target })).toBe(true);
     }
+  });
+
+  it("accepts unknown rollIn values", () => {
+    expect([
+      isRollRequest({ ...valid, rollIn: "sideways" }),
+      isRollRequest({ ...valid, rollIn: 7 }),
+    ]).toEqual([true, true]);
   });
 });
 

@@ -17,8 +17,16 @@ import {
   INTERNAL_PING_CHANNEL,
   INTERNAL_READY_CHANNEL,
   INTERNAL_ROLL_CHANNEL,
-  TRUSTED_ROLL_TARGET_SOURCES,
 } from "./dicePlusProtocol";
+
+const popoverChannels = {
+  ping: "rodeo.owlbear.dice/popover-ping",
+  ready: "rodeo.owlbear.dice/popover-ready",
+  roll: "rodeo.owlbear.dice/popover-roll",
+};
+const createPopoverRollHandler = createDicePlusInternalRollHandler as (
+  channels: typeof popoverChannels
+) => () => void;
 
 describe("dicePlusInternalRollHandler", () => {
   let unsubscribe: () => void;
@@ -74,7 +82,7 @@ describe("dicePlusInternalRollHandler", () => {
     expect(rollState.roll?.hidden).toBe(true);
   });
 
-  it("hides rollTarget=everyone from an untrusted source", async () => {
+  it("shows rollTarget=everyone from any source", async () => {
     simulateBroadcast(INTERNAL_ROLL_CHANNEL, {
       rollId: "r-2",
       playerId: "p-1",
@@ -84,22 +92,6 @@ describe("dicePlusInternalRollHandler", () => {
       showResults: true,
       timestamp: 0,
       source: "com.example.forge",
-    });
-    await flushPromises();
-
-    expect(useDiceRollStore.getState().roll?.hidden).toBe(true);
-  });
-
-  it("honors rollTarget=everyone from a trusted source", async () => {
-    simulateBroadcast(INTERNAL_ROLL_CHANNEL, {
-      rollId: "r-5",
-      playerId: "p-1",
-      playerName: "Alice",
-      rollTarget: "everyone",
-      diceNotation: "1d20",
-      showResults: true,
-      timestamp: 0,
-      source: TRUSTED_ROLL_TARGET_SOURCES[0],
     });
     await flushPromises();
 
@@ -157,7 +149,7 @@ describe("dicePlusInternalRollHandler", () => {
     expect(useDiceControlsStore.getState().diceHidden).toBe(false);
   });
 
-  it("does not make a GM's hidden toggle public via a trusted roll", async () => {
+  it("does not make a GM's hidden toggle public via an everyone roll", async () => {
     useDiceControlsStore.setState({ diceHidden: true });
 
     simulateBroadcast(INTERNAL_ROLL_CHANNEL, {
@@ -168,11 +160,113 @@ describe("dicePlusInternalRollHandler", () => {
       diceNotation: "1d20",
       showResults: true,
       timestamp: 0,
-      source: TRUSTED_ROLL_TARGET_SOURCES[0],
+      source: "com.example.forge",
     });
     await flushPromises();
 
     expect(useDiceRollStore.getState().roll?.hidden).toBe(false);
     expect(useDiceControlsStore.getState().diceHidden).toBe(true);
+  });
+
+  describe("hidden audience", () => {
+    function request(rollTarget: string, source = "com.example.forge") {
+      return {
+        rollId: "r-aud",
+        playerId: "p-1",
+        playerName: "Alice",
+        rollTarget,
+        diceNotation: "1d20",
+        showResults: true,
+        timestamp: 0,
+        source,
+      };
+    }
+
+    it("narrows a self roll to the roller", async () => {
+      // #when
+      simulateBroadcast(INTERNAL_ROLL_CHANNEL, request("self"));
+      await flushPromises();
+      // #then
+      expect(useDiceRollStore.getState().roll?.hiddenAudience).toBe("self");
+    });
+
+    it("opens a dm roll to the GM", async () => {
+      // #when
+      simulateBroadcast(INTERNAL_ROLL_CHANNEL, request("dm"));
+      await flushPromises();
+      // #then
+      expect(useDiceRollStore.getState().roll?.hiddenAudience).toBe("gm");
+    });
+
+    it("opens a gm_only roll to the GM", async () => {
+      // #when
+      simulateBroadcast(INTERNAL_ROLL_CHANNEL, request("gm_only"));
+      await flushPromises();
+      // #then
+      expect(useDiceRollStore.getState().roll?.hiddenAudience).toBe("gm");
+    });
+
+    it("leaves an everyone roll visible with no audience", async () => {
+      // #when
+      simulateBroadcast(
+        INTERNAL_ROLL_CHANNEL,
+        request("everyone")
+      );
+      await flushPromises();
+      // #then
+      const roll = useDiceRollStore.getState().roll;
+      expect([roll?.hidden, roll?.hiddenAudience]).toEqual([false, undefined]);
+    });
+  });
+
+  it("a popover handler answers and rolls only on popover channels", async () => {
+    // #given
+    unsubscribe();
+    unsubscribe = createPopoverRollHandler(popoverChannels);
+    // #when
+    simulateBroadcast(popoverChannels.ping, { nonce: "popover-1" });
+    simulateBroadcast(popoverChannels.roll, {
+      rollId: "popover-roll",
+      playerId: "p-1",
+      playerName: "Alice",
+      rollTarget: "dm",
+      diceNotation: "1d6",
+      showResults: true,
+      timestamp: 0,
+      source: "com.example.forge",
+    });
+    await flushPromises();
+
+    // #then
+    expect([
+      obrCalls.broadcast.map((broadcast) => broadcast.channel),
+      useDiceRollStore.getState().roll?.hidden,
+      useDiceRollStore.getState().roll?.hiddenAudience,
+    ]).toEqual([[popoverChannels.ready], true, "gm"]);
+  });
+
+  it("the action handler ignores popover pings and rolls", async () => {
+    // #given
+    // The default action handler is mounted by beforeEach.
+    // #when
+    simulateBroadcast(popoverChannels.ping, { nonce: "popover-2" });
+    simulateBroadcast(popoverChannels.roll, {
+      rollId: "ignored-popover-roll",
+      playerId: "p-1",
+      playerName: "Alice",
+      rollTarget: "everyone",
+      diceNotation: "1d6",
+      showResults: true,
+      timestamp: 0,
+      source: "com.example.forge",
+    });
+    await flushPromises();
+
+    // #then
+    expect([
+      obrCalls.broadcast,
+      useDiceRollStore.getState().roll,
+      getPendingRollRequest(),
+    ]).toEqual([[], null, null]);
   });
 });
